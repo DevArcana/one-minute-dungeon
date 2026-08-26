@@ -30,6 +30,11 @@
       </div>
       <p class="game-desc">방을 돌파하고 보물을 얻으세요.<br>10번째 방의 보스를 쓰러뜨리면 승리합니다.</p>
 
+      <div class="class-select-row" id="class-select-row">
+        <button class="btn btn-tiny class-btn" data-class="warrior">⚔️ 전사</button>
+        <button class="btn btn-tiny class-btn" data-class="rogue">🗡️ 도적</button>
+        <button class="btn btn-tiny class-btn" data-class="mage">🔮 마법사</button>
+      </div>
       <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
       <button id="btn-open-upgrade" class="btn btn-secondary">🛠️ 업그레이드</button>
       <div class="title-menu-row">
@@ -39,6 +44,7 @@
         <button id="btn-open-achievements" class="btn btn-tiny">🏅 업적</button>
         <button id="btn-open-quests" class="btn btn-tiny">🗒️ 퀘스트</button>
       </div>
+      <button id="btn-boss-rush" class="btn btn-secondary hidden">👑 보스 러시</button>
       <button id="btn-hardcore-toggle" class="btn btn-hardcore">☠️ 하드코어 모드: OFF</button>
 
       <button id="btn-clicker" class="clicker-coin" aria-label="골드 채굴">🪙</button>
@@ -72,7 +78,10 @@
       </div>
       <div class="hud-row">
         <span class="hud-item">💰 <span id="hud-gold">0</span></span>
-        <span class="hud-item">방 <span id="hud-room">1</span>/10</span>
+        <span class="hud-item">방 <span id="hud-room">1</span>/<span id="hud-room-total">10</span></span>
+      </div>
+      <div class="hud-row" id="hud-modifier-row">
+        <span class="hud-item hud-modifier" id="hud-modifier"></span>
       </div>
     </header>
 
@@ -81,7 +90,7 @@
       <span class="corner corner-tr"></span>
       <span class="corner corner-bl"></span>
       <span class="corner corner-br"></span>
-      <p class="room-badge" id="room-badge">방 <span id="room-number">1</span> / 10</p>
+      <p class="room-badge" id="room-badge">방 <span id="room-number">1</span> / <span id="room-total">10</span></p>
       <div class="enemy-emoji" id="enemy-emoji">👹</div>
       <p class="enemy-name" id="enemy-name">고블린</p>
       <div class="hp-bar-wrap">
@@ -120,7 +129,7 @@
       <p class="result-sub">던전에서 쓰러졌습니다.</p>
       <p id="over-hardcore" class="hardcore-warning hidden"></p>
       <div class="result-stats">
-        <p>도달한 방: <b id="over-room">1</b> / 10</p>
+        <p>도달한 방: <b id="over-room">1</b> / <span id="over-room-total">10</span></p>
         <p>처치한 적: <b id="over-kills">0</b>마리</p>
         <p>획득 골드: <b id="over-gold">0</b> 💰</p>
         <p>획득 장비: <b id="over-items">없음</b></p>
@@ -186,6 +195,8 @@
       <h1 class="upgrade-title">📖 몬스터 도감</h1>
       <p class="upgrade-gold">처치한 몬스터만 도감에 기록됩니다</p>
       <div id="bestiary-grid" class="bestiary-grid"></div>
+      <p class="upgrade-gold" id="relic-compendium-title">📜 유물 도감</p>
+      <div id="relic-grid" class="bestiary-grid"></div>
       <button id="btn-bestiary-back" class="btn btn-secondary">뒤로 가기</button>
     </div>
   </section>

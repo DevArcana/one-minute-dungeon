@@ -6,6 +6,22 @@
          던전 진행 → 전투 → 보물/이벤트 → 보스 → 결과 → 업그레이드
 ========================================================= */
 
+/* --- 던전 모디파이어: 런 시작 시 랜덤으로 하나가 적용되는 이번 던전 전용 특성 --- */
+const DUNGEON_MODIFIERS = [
+  { key: 'twilight', name: '🌆 황혼의 던전', desc: '골드 획득 +30%, 대신 최대 HP -10', apply: (r) => { r.goldMult += 0.3; r.maxHp = Math.max(20, r.maxHp - 10); r.hp = Math.min(r.hp, r.maxHp); } },
+  { key: 'blessed', name: '🙏 축복받은 던전', desc: '최대 HP +20, 대신 공격력 -3', apply: (r) => { r.maxHp += 20; r.hp += 20; r.atk = Math.max(1, r.atk - 3); } },
+  { key: 'cursed', name: '☠️ 저주받은 던전', desc: '공격력 +8, 대신 치명타 확률 -6%', apply: (r) => { r.atk += 8; r.critChance = Math.max(0.02, r.critChance - 0.06); } },
+  { key: 'fortune', name: '🍀 행운의 던전', desc: '치명타 확률 +10%, 대신 골드 -15%', apply: (r) => { r.critChance += 0.10; r.goldMult = Math.max(0.2, r.goldMult - 0.15); } },
+  { key: 'iron', name: '🛡️ 철벽의 던전', desc: '방어력 +6, 대신 골드 -10%', apply: (r) => { r.def += 6; r.goldMult = Math.max(0.2, r.goldMult - 0.1); } },
+];
+
+/* --- 시작 클래스: 타이틀 화면에서 선택, 던전 진입 시 고유 패시브 적용 --- */
+const CLASSES = [
+  { key: 'warrior', name: '⚔️ 전사', desc: '방어력 +2', apply: (r) => { r.def += 2; } },
+  { key: 'rogue', name: '🗡️ 도적', desc: '치명타 확률 +8%', apply: (r) => { r.critChance += 0.08; } },
+  { key: 'mage', name: '🔮 마법사', desc: '물약 회복량 +15%p', apply: (r) => { r.healPenalty = (r.healPenalty || 0) - 0.15; } },
+];
+
 /* ---------------- 1. 게임 데이터 ---------------- */
 
 const ENEMIES = [
@@ -245,9 +261,9 @@ const QUEST_POOL = [
 
 /* --- 상점에서 구매 가능한 펫: 매 전투 자동으로 약간의 피해를 추가로 준다 --- */
 const PET_POOL = [
-  { key: 'sprite', name: '🧚 꼬마 요정', atk: 2, price: 120 },
-  { key: 'wolfcub', name: '🐺 새끼 늑대', atk: 4, price: 220 },
-  { key: 'hatchling', name: '🐲 아기 드래곤', atk: 7, price: 380 },
+  { key: 'sprite', name: '🧚 꼬마 요정', atk: 2, price: 120, evolvedName: '🧚‍♀️ 요정 여왕', evolvedBonus: 4 },
+  { key: 'wolfcub', name: '🐺 새끼 늑대', atk: 4, price: 220, evolvedName: '🐺 은빛 늑대왕', evolvedBonus: 6 },
+  { key: 'hatchling', name: '🐲 아기 드래곤', atk: 7, price: 380, evolvedName: '🐉 성체 드래곤', evolvedBonus: 10 },
 ];
 const PET_MAX_LEVEL = 10;
 const PET_ATK_PER_LEVEL = 2;
@@ -259,7 +275,9 @@ function petBaseAtk(key) {
 function petEffectiveAtk(pet) {
   if (!pet) return 0;
   const level = pet.level || 1;
-  return petBaseAtk(pet.key) + (level - 1) * PET_ATK_PER_LEVEL;
+  const def = PET_POOL.find((p) => p.key === pet.key);
+  const evolvedBonus = (def && level >= PET_MAX_LEVEL) ? def.evolvedBonus : 0;
+  return petBaseAtk(pet.key) + (level - 1) * PET_ATK_PER_LEVEL + evolvedBonus;
 }
 function petUpgradeCost(level) {
   return Math.round(60 * Math.pow(1.35, level - 1));
@@ -289,6 +307,8 @@ function defaultSave() {
     huntsClaimed: [],
     lastSeen: null,
     idleGold: { accumulated: 0, lastTick: Date.now() },
+    lastClass: 'warrior',
+    relicsSeen: [],
     settings: { sound: true, hardcore: false },
   };
 }
@@ -316,6 +336,8 @@ function loadSave() {
       idleGold: (parsed.idleGold && typeof parsed.idleGold === 'object')
         ? { accumulated: parsed.idleGold.accumulated || 0, lastTick: parsed.idleGold.lastTick || Date.now() }
         : def.idleGold,
+      lastClass: CLASSES.some((c) => c.key === parsed.lastClass) ? parsed.lastClass : 'warrior',
+      relicsSeen: Array.isArray(parsed.relicsSeen) ? parsed.relicsSeen : [],
     };
   } catch (e) {
     return defaultSave();
@@ -462,10 +484,10 @@ function upgradeCost(key, level) {
 
 let run = null;
 
-function newRun() {
+function newRun(bossRush) {
   const bs = baseStats();
   const eq = equippedBonus();
-  return {
+  const run = {
     hp: bs.maxHp + eq.hp,
     maxHp: bs.maxHp + eq.hp,
     atk: bs.atk + eq.atk,
@@ -487,10 +509,24 @@ function newRun() {
     synergiesApplied: [],
     storyFlags: {},
     itemsGained: [],
-    roomTypes: buildRoomSequence(),
+    bossRush: !!bossRush,
+    roomTypes: bossRush ? ['boss', 'boss', 'boss'] : buildRoomSequence(),
+    bossQueue: bossRush ? [...BOSSES].sort(() => Math.random() - 0.5) : null,
     combat: null, // { enemy, enemyHp, enemyHpMax, isBoss, poisonTurns, guardActive }
     startTime: Date.now(),
   };
+  const cls = CLASSES.find((c) => c.key === save.lastClass) || CLASSES[0];
+  cls.apply(run);
+  run.classKey = cls.key;
+  if (!bossRush) {
+    const mod = pick(DUNGEON_MODIFIERS);
+    mod.apply(run);
+    run.modifierKey = mod.key;
+    run.modifierName = mod.name;
+    run.modifierDesc = mod.desc;
+  }
+  run.hp = Math.min(run.hp, run.maxHp);
+  return run;
 }
 
 function buildRoomSequence() {
@@ -512,11 +548,11 @@ function showScreen(id) {
 
 /* ---------------- 8. 던전 진행 ---------------- */
 
-function startRun(resumed) {
+function startRun(resumed, bossRush) {
   ensureAudio();
   stopAutoBattleLoop();
   if (!resumed) {
-    run = newRun();
+    run = newRun(bossRush);
     save.playCount += 1;
     saveGame();
     logHistory = [];
@@ -552,7 +588,7 @@ function enterRoom() {
   document.getElementById('room-number').textContent = run.room;
 
   if (type === 'boss') {
-    const boss = { ...pick(BOSSES) };
+    const boss = { ...(run.bossQueue ? run.bossQueue[run.room - 1] : pick(BOSSES)) };
     run.combat = makeCombat(boss, true, 0);
     sfx.boss();
     playBgm('boss');
@@ -677,6 +713,12 @@ function updateHud() {
   document.getElementById('hud-def').textContent = run.def;
   document.getElementById('hud-gold').textContent = run.gold;
   document.getElementById('hud-room').textContent = run.room;
+  document.getElementById('hud-room-total').textContent = run.roomTypes.length;
+  document.getElementById('room-total').textContent = run.roomTypes.length;
+  const modBadge = document.getElementById('hud-modifier');
+  modBadge.textContent = run.modifierName ? `${run.modifierName}` : '';
+  modBadge.title = run.modifierDesc || '';
+  document.getElementById('hud-modifier-row').classList.toggle('hidden', !run.modifierName);
   if (run.hp / run.maxHp <= 0.5) run.wasLowHp = true;
   updateLowHpVignette();
 }
@@ -1161,7 +1203,20 @@ function resolveTreasure() {
   setTimeout(() => {
     if (!run) return;
     let resultMsg;
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.12) {
+      const lucky = Math.random() < 0.5;
+      if (lucky) {
+        const g = Math.round(48 * run.goldMult);
+        run.gold += g;
+        resultMsg = `🎲 수상한 상자를 열었습니다! 대박! 골드 +${g}`;
+        spawnSparkles('💰', 10);
+      } else {
+        const dmg = Math.max(5, Math.round(run.maxHp * 0.15));
+        run.hp = Math.max(1, run.hp - dmg);
+        showDamageFloat('-' + dmg, '');
+        resultMsg = `🎲 수상한 상자를 열었습니다! 함정이었다! HP -${dmg}`;
+      }
+    } else if (Math.random() < 0.3) {
       const slot = pick(['weapon', 'armor', 'ring']);
       const gradeIdx = weightedGrade();
       const item = { ...EQUIPMENT_POOL[slot][gradeIdx], slot, id: Date.now() + '' + rand(0, 999) };
@@ -1237,7 +1292,8 @@ function resolveEvent() {
 }
 
 function resolveRelic() {
-  const pool = [...RELICS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const choiceCount = save.relicsSeen.length >= RELICS.length ? 4 : 3;
+  const pool = [...RELICS].sort(() => Math.random() - 0.5).slice(0, choiceCount);
   const panel = document.getElementById('event-panel');
   panel.classList.remove('hidden');
   panel.innerHTML = '<p>이번 던전에만 적용되는 유물을 하나 선택하세요.</p>';
@@ -1250,6 +1306,7 @@ function resolveRelic() {
       relic.apply(run);
       run.relics.push(relic.name);
       addQuestProgress('relics', 1);
+      if (!save.relicsSeen.includes(relic.name)) { save.relicsSeen.push(relic.name); saveGame(); }
       let msg = `유물 [${relic.name}] 획득!`;
       const synergy = RELIC_SYNERGIES.find((s) =>
         !run.synergiesApplied.includes(s.name) && s.pair.every((n) => run.relics.includes(n)));
@@ -1299,7 +1356,7 @@ function resolveCards() {
 function showNextRoomButton() {
   const bar = document.getElementById('action-bar');
   bar.classList.remove('hidden');
-  const isLast = run.room >= 10;
+  const isLast = run.room >= run.roomTypes.length;
   bar.innerHTML = `<button id="btn-next-room" class="btn btn-action btn-attack" style="flex:1">${isLast ? '결과 보기' : '다음 방으로 →'}</button>`;
   document.getElementById('btn-next-room').addEventListener('click', () => {
     sfx.button();
@@ -1332,7 +1389,7 @@ function finishRun(victory) {
   save.shopOffers = null; // 던전을 한 판 다녀오면 상점이 새로 재입고된다
   const goldEarned = run.gold;
   save.totalGold += goldEarned;
-  save.bestFloor = Math.max(save.bestFloor, run.room);
+  if (!run.bossRush) save.bestFloor = Math.max(save.bestFloor, run.room);
   if (victory) save.clearCount += 1;
   saveGame();
 
@@ -1343,14 +1400,15 @@ function finishRun(victory) {
 
   if (victory) {
     stopBgm();
-    const bonus = Math.round(30 * run.goldMult);
+    let bonus = Math.round(30 * run.goldMult);
+    if (run.bossRush) bonus += 80; // 👑 보스 러시 클리어 보너스
     save.totalGold += bonus;
     const clearSeconds = Math.round((Date.now() - run.startTime) / 1000);
-    const isNewRecord = save.bestClearTime === null || clearSeconds < save.bestClearTime;
+    const isNewRecord = !run.bossRush && (save.bestClearTime === null || clearSeconds < save.bestClearTime);
     if (isNewRecord) save.bestClearTime = clearSeconds;
     saveGame();
     sfx.clear();
-    document.getElementById('clear-time').textContent = clearSeconds + '초' + (isNewRecord ? ' 🏆 신기록!' : ` (최고 기록: ${save.bestClearTime}초)`);
+    document.getElementById('clear-time').textContent = clearSeconds + '초' + (isNewRecord ? ' 🏆 신기록!' : run.bossRush ? '' : ` (최고 기록: ${save.bestClearTime}초)`);
     document.getElementById('clear-gold').textContent = goldEarned + bonus;
     document.getElementById('clear-items').textContent = itemNames;
     document.getElementById('clear-kills').textContent = run.kills;
@@ -1365,6 +1423,7 @@ function finishRun(victory) {
       saveGame();
     }
     document.getElementById('over-room').textContent = run.room;
+    document.getElementById('over-room-total').textContent = run.roomTypes.length;
     document.getElementById('over-kills').textContent = run.kills;
     document.getElementById('over-gold').textContent = hardcore ? 0 : goldEarned;
     document.getElementById('over-items').textContent = itemNames;
@@ -1694,6 +1753,24 @@ function renderBestiary() {
       : `<div class="bestiary-art locked-art">❔</div><div class="bestiary-name">???</div>`;
     grid.appendChild(cell);
   });
+  renderRelicCompendium();
+}
+
+function renderRelicCompendium() {
+  const grid = document.getElementById('relic-grid');
+  grid.innerHTML = '';
+  RELICS.forEach((relic) => {
+    const discovered = save.relicsSeen.includes(relic.name);
+    const cell = document.createElement('div');
+    cell.className = 'bestiary-cell' + (discovered ? '' : ' locked');
+    cell.innerHTML = discovered
+      ? `<div class="bestiary-name">${relic.name}</div><div class="bestiary-ability">${relic.desc}</div>`
+      : `<div class="bestiary-art locked-art">❔</div><div class="bestiary-name">???</div>`;
+    grid.appendChild(cell);
+  });
+  const title = document.getElementById('relic-compendium-title');
+  const complete = save.relicsSeen.length >= RELICS.length;
+  title.textContent = `📜 유물 도감 (${save.relicsSeen.length}/${RELICS.length})${complete ? ' — 완성! 유물 선택지 +1' : ''}`;
 }
 
 /* ---------------- 12-4. 업적 화면 ---------------- */
@@ -1786,6 +1863,10 @@ function renderTitleStats() {
   const hcBtn = document.getElementById('btn-hardcore-toggle');
   hcBtn.textContent = `☠️ 하드코어 모드: ${save.settings.hardcore ? 'ON' : 'OFF'}`;
   hcBtn.classList.toggle('active', save.settings.hardcore);
+  document.querySelectorAll('.class-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.class === save.lastClass);
+  });
+  document.getElementById('btn-boss-rush').classList.toggle('hidden', save.clearCount <= 0);
 }
 
 /* --- 클리커: 타이틀 화면에서 탭해서 소량의 골드를 채굴 --- */
@@ -1881,6 +1962,15 @@ function init() {
   document.getElementById('btn-log-history-close').addEventListener('click', () => {
     document.getElementById('log-history-panel').classList.add('hidden');
   });
+  document.querySelectorAll('.class-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      sfx.button();
+      save.lastClass = btn.dataset.class;
+      saveGame();
+      renderTitleStats();
+    });
+  });
+  document.getElementById('btn-boss-rush').addEventListener('click', () => { sfx.button(); startRun(false, true); });
   document.getElementById('btn-enter-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
   document.getElementById('btn-open-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
