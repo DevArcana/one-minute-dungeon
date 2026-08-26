@@ -9,20 +9,20 @@
 /* ---------------- 1. 게임 데이터 ---------------- */
 
 const ENEMIES = [
-  { key: 'rat',      name: '거대 쥐',    emoji: '🐀', tier: 'normal', hp: 18, atk: 4,  def: 0, gold: 5  },
-  { key: 'goblin',   name: '고블린',     emoji: '👺', tier: 'normal', hp: 25, atk: 5,  def: 1, gold: 8  },
-  { key: 'bat',      name: '동굴 박쥐',  emoji: '🦇', tier: 'normal', hp: 15, atk: 6,  def: 0, gold: 6, dodge: 0.15 },
-  { key: 'skeleton', name: '해골 전사',  emoji: '💀', tier: 'normal', hp: 30, atk: 6,  def: 3, gold: 10, guard: 0.2 },
-  { key: 'zombie',   name: '좀비',       emoji: '🧟', tier: 'strong', hp: 42, atk: 4,  def: 2, gold: 9,  regen: 3 },
-  { key: 'spider',   name: '독거미',     emoji: '🕷️', tier: 'strong', hp: 24, atk: 5,  def: 1, gold: 9,  poison: 0.35 },
-  { key: 'orc',      name: '오크',       emoji: '👹', tier: 'strong', hp: 46, atk: 8,  def: 3, gold: 14, strongHit: 0.25 },
-  { key: 'knight',   name: '지옥의 기사', emoji: '🔥', tier: 'strong', hp: 55, atk: 10, def: 4, gold: 20, crit: 0.2 },
+  { key: 'rat',      name: '거대 쥐',    emoji: '🐀', tier: 'normal', hp: 21, atk: 5,  def: 0, gold: 5  },
+  { key: 'goblin',   name: '고블린',     emoji: '👺', tier: 'normal', hp: 29, atk: 6,  def: 1, gold: 8  },
+  { key: 'bat',      name: '동굴 박쥐',  emoji: '🦇', tier: 'normal', hp: 18, atk: 7,  def: 0, gold: 6, dodge: 0.18 },
+  { key: 'skeleton', name: '해골 전사',  emoji: '💀', tier: 'normal', hp: 35, atk: 7,  def: 3, gold: 10, guard: 0.24 },
+  { key: 'zombie',   name: '좀비',       emoji: '🧟', tier: 'strong', hp: 51, atk: 5,  def: 2, gold: 9,  regen: 4 },
+  { key: 'spider',   name: '독거미',     emoji: '🕷️', tier: 'strong', hp: 29, atk: 6,  def: 1, gold: 9,  poison: 0.42 },
+  { key: 'orc',      name: '오크',       emoji: '👹', tier: 'strong', hp: 56, atk: 10, def: 3, gold: 14, strongHit: 0.32 },
+  { key: 'knight',   name: '지옥의 기사', emoji: '🔥', tier: 'strong', hp: 67, atk: 12, def: 4, gold: 20, crit: 0.26 },
 ];
 
 const BOSSES = [
-  { key: 'dragon', name: '고대 드래곤',  emoji: '🐉', hp: 130, atk: 14, def: 5, gold: 60 },
-  { key: 'demon',  name: '마왕의 기사',  emoji: '👿', hp: 110, atk: 16, def: 6, gold: 55 },
-  { key: 'death',  name: '죽음의 군주',  emoji: '💀', hp: 95,  atk: 13, def: 4, gold: 50 },
+  { key: 'dragon', name: '고대 드래곤',  emoji: '🐉', hp: 166, atk: 18, def: 6, gold: 60, regen: 7,  strongHit: 0.28 },
+  { key: 'demon',  name: '마왕의 기사',  emoji: '👿', hp: 141, atk: 20, def: 7, gold: 55, guard: 0.26, strongHit: 0.3 },
+  { key: 'death',  name: '죽음의 군주',  emoji: '💀', hp: 122, atk: 16, def: 5, gold: 50, poison: 0.4,  crit: 0.18 },
 ];
 
 /* --- SD(데포르메)풍 캐릭터 SVG 아트: 외부 이미지 없이 코드로 직접 그림 --- */
@@ -81,11 +81,11 @@ function abilityText(m) {
 }
 
 const UPGRADE_DEFS = [
-  { key: 'atk',  name: '⚔️ 공격력 강화', desc: '공격력 +2', base: 100 },
-  { key: 'def',  name: '🛡️ 방어력 강화', desc: '방어력 +1', base: 100 },
-  { key: 'hp',   name: '❤️ 최대 HP 강화', desc: '최대 HP +10', base: 120 },
-  { key: 'gold', name: '💰 골드 획득량 강화', desc: '골드 획득 +10%', base: 150 },
-  { key: 'luck', name: '🍀 행운 강화', desc: '치명타 확률 +1%', base: 130 },
+  { key: 'atk',  name: '⚔️ 공격력 강화', desc: '공격력 +2', base: 130 },
+  { key: 'def',  name: '🛡️ 방어력 강화', desc: '방어력 +1', base: 130 },
+  { key: 'hp',   name: '❤️ 최대 HP 강화', desc: '최대 HP +10', base: 150 },
+  { key: 'gold', name: '💰 골드 획득량 강화', desc: '골드 획득 +10%', base: 180 },
+  { key: 'luck', name: '🍀 행운 강화', desc: '치명타 확률 +1%', base: 160 },
 ];
 
 const EVENTS = [
@@ -240,7 +240,7 @@ function playBgm(theme) {
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function weightedRoomType() {
-  const table = [['normal', 50], ['strong', 20], ['treasure', 10], ['heal', 10], ['event', 10]];
+  const table = [['normal', 40], ['strong', 35], ['treasure', 9], ['heal', 8], ['event', 8]];
   let r = Math.random() * 100;
   for (const [type, w] of table) { if (r < w) return type; r -= w; }
   return 'normal';
@@ -294,7 +294,7 @@ function newRun() {
     gold: 0,
     room: 1,
     kills: 0,
-    potions: 2,
+    potions: 1,
     itemsGained: [],
     roomTypes: buildRoomSequence(),
     combat: null, // { enemy, enemyHp, enemyHpMax, isBoss, poisonTurns, guardActive }
@@ -609,7 +609,7 @@ function playerHeal() {
   setActionsLocked(true);
   sfx.button();
   run.potions -= 1;
-  const heal = Math.round(run.maxHp * 0.3);
+  const heal = Math.round(run.maxHp * 0.25);
   const before = run.hp;
   run.hp = Math.min(run.maxHp, run.hp + heal);
   showDamageFloat('+' + (run.hp - before), 'heal-float');
@@ -671,7 +671,7 @@ function onPlayerDefeated() {
 
 function resolveTreasure() {
   const rewards = [
-    { label: '골드 +30', apply: (r) => { r.gold += Math.round(30 * r.goldMult); } },
+    { label: '골드 +24', apply: (r) => { r.gold += Math.round(24 * r.goldMult); } },
     { label: '최대 HP +10', apply: (r) => { r.maxHp += 10; r.hp += 10; } },
     { label: '공격력 +5', apply: (r) => { r.atk += 5; } },
     { label: '방어력 +3', apply: (r) => { r.def += 3; } },
