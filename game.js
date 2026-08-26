@@ -25,6 +25,12 @@ const BOSSES = [
   { key: 'death',  name: '죽음의 군주',  emoji: '💀', hp: 122, atk: 16, def: 5, gold: 50, crit: 0.18, freeze: 0.35 },
 ];
 
+/* --- 미니보스: 5번째 방에 고정 등장, 최종 보스보다는 약하지만 일반 몬스터보다 강함 --- */
+const MINIBOSSES = [
+  { key: 'ogre_chief', name: '오크 족장', emoji: '👑', hp: 75, atk: 11, def: 4, gold: 25, strongHit: 0.3, guard: 0.15 },
+  { key: 'wraith',     name: '망령 기사', emoji: '👻', hp: 70, atk: 13, def: 3, gold: 25, crit: 0.2, freeze: 0.2 },
+];
+
 /* --- SD(데포르메)풍 캐릭터 SVG 아트: 외부 이미지 없이 코드로 직접 그림 --- */
 const CHAR_ART = {
   hero: '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="50" cy="82" rx="17" ry="6" fill="#000" opacity="0.15"/><ellipse cx="50" cy="80" rx="20" ry="14" fill="#3a5fc8"/><circle cx="50" cy="44" r="28" fill="#f4c99b"/><circle cx="34" cy="50" r="4" fill="#ffb3c1" opacity="0.6"/><circle cx="66" cy="50" r="4" fill="#ffb3c1" opacity="0.6"/><path d="M22 78 Q50 92 78 78 L78 66 Q50 78 22 66 Z" fill="#2a46a8"/><path d="M28 40 Q50 8 72 40 Q68 20 50 16 Q32 20 28 40 Z" fill="#6b4226"/><circle cx="41" cy="46" r="4" fill="#1a1a2e"/><circle cx="59" cy="46" r="4" fill="#1a1a2e"/><circle cx="39.7" cy="44.7" r="1.1" fill="#fff"/><circle cx="57.7" cy="44.7" r="1.1" fill="#fff"/><path d="M45 55 Q50 58 55 55" stroke="#7a4a30" stroke-width="1.6" fill="none" stroke-linecap="round"/><rect x="70" y="50" width="4" height="28" rx="2" fill="#d4d4d4" transform="rotate(18 72 64)"/><rect x="66" y="46" width="11" height="6" rx="2" fill="#d4af37" transform="rotate(18 72 49)"/><path d="M18 40 Q10 20 26 10 Q22 26 30 38 Z" fill="#d4af37" opacity="0.9"/></svg>',
@@ -187,6 +193,7 @@ function defaultSave() {
     totalGold: 0,
     playCount: 0,
     clearCount: 0,
+    bestClearTime: null,
     upgrades: { atk: 0, def: 0, hp: 0, gold: 0, luck: 0, firstCrit: 0 },
     inventory: [],
     equipped: { weapon: null, armor: null, ring: null },
@@ -370,6 +377,7 @@ function newRun() {
     healPenalty: 0,
     fleeSafe: false,
     combo: 0,
+    autoBattle: false,
     relics: [],
     itemsGained: [],
     roomTypes: buildRoomSequence(),
@@ -382,6 +390,7 @@ function buildRoomSequence() {
   const seq = [];
   for (let i = 1; i <= 9; i++) seq.push(weightedRoomType());
   seq[3] = 'relic'; // 방 4: 유물 선택
+  seq[4] = 'miniboss'; // 방 5: 미니보스
   seq[6] = 'relic'; // 방 7: 유물 선택
   seq.push('boss');
   return seq;
@@ -398,10 +407,12 @@ function showScreen(id) {
 
 function startRun(resumed) {
   ensureAudio();
+  stopAutoBattleLoop();
   if (!resumed) {
     run = newRun();
     save.playCount += 1;
     saveGame();
+    logHistory = [];
   }
   showScreen('screen-game');
   enterRoom();
@@ -439,6 +450,15 @@ function enterRoom() {
     flashScreen('boss', 600);
     renderCombat(true);
     setLog(`${boss.name}이(가) 앞을 가로막습니다!`);
+  } else if (type === 'miniboss') {
+    const mini = { ...pick(MINIBOSSES) };
+    run.combat = makeCombat(mini, false, 1);
+    run.combat.golden = false;
+    sfx.boss();
+    playBgm('boss');
+    flashScreen('boss', 500);
+    renderCombat(false);
+    setLog(`👑 미니보스 ${mini.name}이(가) 나타났습니다!`);
   } else if (type === 'normal' || type === 'strong') {
     const pool = ENEMIES.filter(e => e.tier === type);
     const enemy = { ...pick(pool) };
@@ -492,6 +512,7 @@ function renderCombat(isBoss) {
   updatePotionButton();
   updateFleeButton();
   updateComboUI();
+  updateAutoBattleButton();
 }
 
 function updateFleeButton() {
@@ -536,7 +557,20 @@ function updateHud() {
   updateLowHpVignette();
 }
 
-function setLog(msg) { document.getElementById('battle-log').textContent = msg; }
+let logHistory = [];
+function setLog(msg) {
+  document.getElementById('battle-log').textContent = msg;
+  logHistory.push(msg);
+  if (logHistory.length > 40) logHistory.shift();
+  const panel = document.getElementById('log-history-panel');
+  if (panel && !panel.classList.contains('hidden')) renderLogHistory();
+}
+function renderLogHistory() {
+  const list = document.getElementById('log-history-list');
+  list.innerHTML = logHistory.length
+    ? logHistory.slice().reverse().map((m) => `<p>${m}</p>`).join('')
+    : '<p>기록이 없습니다.</p>';
+}
 
 function updatePotionButton() {
   document.getElementById('potion-count').textContent = run.potions;
@@ -747,6 +781,47 @@ function playerUltimate() {
   updateComboUI();
   if (c.enemyHp <= 0) { onEnemyDefeated(); return; }
   setTimeout(enemyTurn, 500);
+}
+
+/* --- 자동 전투: 연타 피로도를 줄이기 위한 자동 공격 --- */
+let autoBattleTimer = null;
+function stopAutoBattleLoop() {
+  if (autoBattleTimer) clearInterval(autoBattleTimer);
+  autoBattleTimer = null;
+}
+function updateAutoBattleButton() {
+  const btn = document.getElementById('btn-autobattle');
+  if (!btn || !run) return;
+  btn.classList.toggle('active', run.autoBattle);
+  btn.textContent = run.autoBattle ? '🔁 자동전투 ON' : '🔁 자동전투 OFF';
+}
+function toggleAutoBattle() {
+  if (!run) return;
+  sfx.button();
+  run.autoBattle = !run.autoBattle;
+  updateAutoBattleButton();
+  if (run.autoBattle) {
+    stopAutoBattleLoop();
+    autoBattleTimer = setInterval(autoBattleTick, 700);
+  } else {
+    stopAutoBattleLoop();
+  }
+}
+function autoBattleTick() {
+  if (!run || !run.autoBattle) { stopAutoBattleLoop(); return; }
+  if (!run.combat) return; // 방 사이 대기 중에는 아무것도 하지 않음
+  const lowHp = run.hp / run.maxHp < 0.35;
+  const healBtn = document.getElementById('btn-heal');
+  if (lowHp && run.potions > 0 && healBtn && !healBtn.disabled) { playerHeal(); return; }
+  if (lowHp && run.potions <= 0) {
+    run.autoBattle = false;
+    updateAutoBattleButton();
+    stopAutoBattleLoop();
+    setLog('⚠️ HP가 위험해서 자동 전투를 멈췄습니다.');
+    return;
+  }
+  const attackBtn = document.getElementById('btn-attack');
+  if (attackBtn && !attackBtn.disabled) playerAttack();
 }
 
 function updateEnemyHpBar() {
@@ -1075,6 +1150,7 @@ function restoreActionBar() {
 
 function finishRun(victory) {
   clearRunSave();
+  stopAutoBattleLoop();
   const goldEarned = run.gold;
   save.totalGold += goldEarned;
   save.bestFloor = Math.max(save.bestFloor, run.room);
@@ -1088,9 +1164,12 @@ function finishRun(victory) {
     stopBgm();
     const bonus = Math.round(30 * run.goldMult);
     save.totalGold += bonus;
+    const clearSeconds = Math.round((Date.now() - run.startTime) / 1000);
+    const isNewRecord = save.bestClearTime === null || clearSeconds < save.bestClearTime;
+    if (isNewRecord) save.bestClearTime = clearSeconds;
     saveGame();
     sfx.clear();
-    document.getElementById('clear-time').textContent = Math.round((Date.now() - run.startTime) / 1000) + '초';
+    document.getElementById('clear-time').textContent = clearSeconds + '초' + (isNewRecord ? ' 🏆 신기록!' : ` (최고 기록: ${save.bestClearTime}초)`);
     document.getElementById('clear-gold').textContent = goldEarned + bonus;
     document.getElementById('clear-items').textContent = itemNames;
     document.getElementById('clear-kills').textContent = run.kills;
@@ -1307,7 +1386,7 @@ function renderPetShop() {
 function renderBestiary() {
   const grid = document.getElementById('bestiary-grid');
   grid.innerHTML = '';
-  [...ENEMIES, ...BOSSES].forEach((m) => {
+  [...ENEMIES, ...MINIBOSSES, ...BOSSES].forEach((m) => {
     const discovered = save.bestiary.includes(m.key);
     const cell = document.createElement('div');
     cell.className = 'bestiary-cell' + (discovered ? '' : ' locked');
@@ -1426,6 +1505,16 @@ function init() {
   renderTitleStats();
 
   document.getElementById('btn-ultimate').addEventListener('click', playerUltimate);
+  document.getElementById('btn-autobattle').addEventListener('click', toggleAutoBattle);
+  document.getElementById('btn-log-history').addEventListener('click', () => {
+    sfx.button();
+    const panel = document.getElementById('log-history-panel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) renderLogHistory();
+  });
+  document.getElementById('btn-log-history-close').addEventListener('click', () => {
+    document.getElementById('log-history-panel').classList.add('hidden');
+  });
   document.getElementById('btn-enter-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
   document.getElementById('btn-open-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });

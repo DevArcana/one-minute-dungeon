@@ -83,7 +83,18 @@
       <div id="event-panel" class="event-panel hidden"></div>
     </main>
 
-    <button id="btn-ultimate" class="btn btn-ultimate hidden">💥 필살기(0/5)</button>
+    <div class="combat-tools-row">
+      <button id="btn-ultimate" class="btn btn-ultimate hidden">💥 필살기(0/5)</button>
+      <button id="btn-autobattle" class="btn btn-autobattle">🔁 자동전투 OFF</button>
+      <button id="btn-log-history" class="btn btn-log-history" aria-label="전투 기록 보기">📜</button>
+    </div>
+    <div id="log-history-panel" class="log-history-panel hidden">
+      <div class="log-history-header">
+        <span>📜 전투 기록</span>
+        <button id="btn-log-history-close" class="log-history-close" aria-label="닫기">✕</button>
+      </div>
+      <div id="log-history-list" class="log-history-list"></div>
+    </div>
 
     <footer class="action-bar" id="action-bar">
       <button id="btn-attack" class="btn btn-action btn-attack">⚔️ 공격</button>
