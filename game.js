@@ -588,6 +588,20 @@ function makeCombat(enemyBase, isBoss, fleeLeft) {
   };
 }
 
+const SCENE_BY_TYPE = {
+  normal: 'scene-battle', strong: 'scene-battle',
+  ambush: 'scene-ambush',
+  boss: 'scene-boss', miniboss: 'scene-boss',
+  treasure: 'scene-treasure',
+  heal: 'scene-heal',
+  relic: 'scene-relic', cards: 'scene-relic',
+  event: 'scene-event',
+};
+function setSceneByType(type) {
+  const card = document.getElementById('encounter-card');
+  card.className = 'encounter-card' + (SCENE_BY_TYPE[type] ? ' ' + SCENE_BY_TYPE[type] : '');
+}
+
 function enterRoom() {
   document.getElementById('event-panel').classList.add('hidden');
   document.getElementById('event-panel').innerHTML = '';
@@ -596,6 +610,7 @@ function enterRoom() {
 
   const type = run.roomTypes[run.room - 1];
   document.getElementById('room-number').textContent = run.room;
+  setSceneByType(type);
 
   if (type === 'boss') {
     const boss = { ...(run.bossQueue ? run.bossQueue[run.room - 1] : pick(BOSSES)) };

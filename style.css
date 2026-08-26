@@ -363,11 +363,55 @@ html, body {
   text-align: center;
   gap: 8px;
   position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 15%, rgba(255,159,67,0.08), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 85%, rgba(124,92,255,0.08), transparent 60%);
+  transition: background 0.5s ease;
+}
+.encounter-card.shake { animation: screen-shake 0.3s; }
+
+.scene-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: rgba(212,175,55,0.10);
+  opacity: 0.9;
+  pointer-events: none;
+  transition: color 0.5s ease;
+}
+.scene-bg svg { width: 100%; height: 100%; }
+
+.encounter-card.scene-battle {
   background:
     radial-gradient(ellipse 70% 50% at 20% 15%, rgba(255,159,67,0.08), transparent 60%),
     radial-gradient(ellipse 70% 50% at 80% 85%, rgba(124,92,255,0.08), transparent 60%);
 }
-.encounter-card.shake { animation: screen-shake 0.3s; }
+.encounter-card.scene-ambush {
+  background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(227,61,61,0.18), transparent 65%);
+}
+.encounter-card.scene-ambush .scene-bg { color: rgba(227,61,61,0.14); }
+.encounter-card.scene-boss {
+  background: radial-gradient(ellipse 80% 60% at 50% 10%, rgba(162,89,255,0.24), rgba(227,61,61,0.14) 70%);
+}
+.encounter-card.scene-boss .scene-bg { color: rgba(162,89,255,0.18); }
+.encounter-card.scene-treasure {
+  background: radial-gradient(ellipse 80% 60% at 50% 15%, rgba(240,201,90,0.22), transparent 65%);
+}
+.encounter-card.scene-treasure .scene-bg { color: rgba(240,201,90,0.16); }
+.encounter-card.scene-heal {
+  background: radial-gradient(ellipse 80% 60% at 50% 15%, rgba(74,222,128,0.18), transparent 65%);
+}
+.encounter-card.scene-heal .scene-bg { color: rgba(74,222,128,0.14); }
+.encounter-card.scene-relic {
+  background: radial-gradient(ellipse 80% 60% at 50% 15%, rgba(162,89,255,0.2), transparent 65%);
+}
+.encounter-card.scene-relic .scene-bg { color: rgba(162,89,255,0.16); }
+.encounter-card.scene-event {
+  background: radial-gradient(ellipse 80% 60% at 50% 15%, rgba(92,142,255,0.16), transparent 65%);
+}
+.encounter-card.scene-event .scene-bg { color: rgba(92,142,255,0.14); }
+
 @keyframes screen-shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-6px); }
