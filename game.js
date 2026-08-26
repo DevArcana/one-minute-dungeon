@@ -578,6 +578,7 @@ function upgradeCost(key, level) {
 /* ---------------- 6. 던전 실행 상태 ---------------- */
 
 let run = null;
+let lastRunWasBossRush = false;
 
 function newRun(bossRush) {
   const bs = baseStats();
@@ -1499,6 +1500,7 @@ function restoreActionBar() {
 function finishRun(victory) {
   clearRunSave();
   stopAutoBattleLoop();
+  lastRunWasBossRush = !!run.bossRush;
   save.shopOffers = null; // 던전을 한 판 다녀오면 상점이 새로 재입고된다
   const goldEarned = run.gold;
   save.totalGold += goldEarned;
@@ -2196,8 +2198,8 @@ function init() {
   document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
   document.getElementById('btn-over-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-clear-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
-  document.getElementById('btn-retry').addEventListener('click', () => { sfx.button(); startRun(false); });
-  document.getElementById('btn-next-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
+  document.getElementById('btn-retry').addEventListener('click', () => { sfx.button(); startRun(false, lastRunWasBossRush); });
+  document.getElementById('btn-next-dungeon').addEventListener('click', () => { sfx.button(); startRun(false, lastRunWasBossRush); });
 
   document.getElementById('btn-open-inventory').addEventListener('click', () => { sfx.button(); stopBgm(); renderInventory(); showScreen('screen-inventory'); });
   document.getElementById('btn-inventory-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
