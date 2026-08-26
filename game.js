@@ -1854,7 +1854,43 @@ function renderShop() {
       list.appendChild(row);
     });
   }
+  renderRoulette();
   renderPetShop();
+}
+
+const ROULETTE_COST = 80;
+function renderRoulette() {
+  const btn = document.getElementById('btn-roulette-roll');
+  btn.disabled = save.totalGold < ROULETTE_COST;
+}
+
+function rollRoulette() {
+  if (save.totalGold < ROULETTE_COST) return;
+  sfx.button();
+  save.totalGold -= ROULETTE_COST;
+  const resultBox = document.getElementById('roulette-result');
+  resultBox.className = 'roulette-result spinning';
+  resultBox.textContent = '🎰';
+  document.getElementById('shop-gold').textContent = save.totalGold;
+  renderRoulette();
+  setTimeout(() => {
+    const slot = pick(['weapon', 'armor', 'ring']);
+    const gradeIdx = weightedGrade();
+    const item = { ...EQUIPMENT_POOL[slot][gradeIdx], slot, id: 'roulette-' + Date.now() + '-' + rand(0, 999) };
+    save.inventory.push(item);
+    const curScore = itemScore(save.equipped[slot]);
+    const equipped = !save.equipped[slot] || itemScore(item) > curScore;
+    if (equipped) save.equipped[slot] = item;
+    saveGame();
+    sfx.gold();
+    spawnSparkles('✨', item.grade === '전설' ? 12 : 6);
+    resultBox.className = 'roulette-result';
+    resultBox.style.borderColor = GRADE_COLORS[item.grade];
+    resultBox.innerHTML = `
+      <div class="upgrade-name">${SLOT_LABEL[slot]} · ${item.name} <span class="grade-tag" style="color:${GRADE_COLORS[item.grade]}">${item.grade}</span></div>
+      <div class="upgrade-level">${itemStatsText(item)}${equipped ? ' · 자동 장착됨' : ''}</div>`;
+    renderRoulette();
+  }, 700);
 }
 
 function renderPetShop() {
@@ -2167,6 +2203,7 @@ function init() {
   document.getElementById('btn-inventory-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-open-shop').addEventListener('click', () => { sfx.button(); stopBgm(); renderShop(); showScreen('screen-shop'); });
+  document.getElementById('btn-roulette-roll').addEventListener('click', rollRoulette);
   document.getElementById('btn-shop-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-open-bestiary').addEventListener('click', () => { sfx.button(); stopBgm(); renderBestiary(); showScreen('screen-bestiary'); });
