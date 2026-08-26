@@ -13,11 +13,14 @@
 
   <!-- 시작 화면 -->
   <section id="screen-title" class="screen active">
+    <div class="fireflies" id="fireflies"></div>
     <button id="btn-sound-toggle" class="sound-toggle" aria-label="사운드 켜기/끄기">🔊</button>
     <div class="title-wrap">
       <div id="hero-portrait" class="hero-portrait"></div>
-      <h1 class="game-title">⚔️ 1분 던전</h1>
-      <p class="game-subtitle">「죽을수록 강해진다.」</p>
+      <div class="title-frame">
+        <h1 class="game-title">⚔️ 1분 던전</h1>
+        <p class="game-subtitle">「죽을수록 강해진다.」</p>
+      </div>
       <p class="game-desc">방을 돌파하고 보물을 얻으세요.<br>10번째 방의 보스를 쓰러뜨리면 승리합니다.</p>
 
       <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
@@ -55,6 +58,10 @@
     </header>
 
     <main class="encounter-card" id="encounter-card">
+      <span class="corner corner-tl"></span>
+      <span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span>
+      <span class="corner corner-br"></span>
       <p class="room-badge" id="room-badge">방 <span id="room-number">1</span> / 10</p>
       <div class="enemy-emoji" id="enemy-emoji">👹</div>
       <p class="enemy-name" id="enemy-name">고블린</p>
@@ -75,6 +82,7 @@
 
   <!-- 게임 오버 화면 -->
   <section id="screen-gameover" class="screen">
+    <div class="crack-overlay" id="crack-overlay"></div>
     <div class="result-wrap">
       <h1 class="result-title over">💀 GAME OVER</h1>
       <p class="result-sub">던전에서 쓰러졌습니다.</p>
@@ -91,6 +99,7 @@
 
   <!-- 클리어 화면 -->
   <section id="screen-clear" class="screen">
+    <div class="confetti-layer" id="confetti-layer"></div>
     <div class="result-wrap">
       <h1 class="result-title win">🏆 DUNGEON CLEAR!</h1>
       <p class="result-sub">던전을 정복했습니다!</p>

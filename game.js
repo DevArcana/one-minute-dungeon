@@ -436,6 +436,50 @@ function updateLowHpVignette() {
   vignette.classList.toggle('low-hp', !!isLow);
 }
 
+/* --- 화면 장식용 파티클: 반딧불 / 컨페티 / 균열 --- */
+function spawnFireflies() {
+  const layer = document.getElementById('fireflies');
+  if (!layer || layer.childElementCount > 0) return;
+  for (let i = 0; i < 14; i++) {
+    const f = document.createElement('span');
+    f.className = 'firefly';
+    f.style.left = rand(0, 100) + '%';
+    f.style.bottom = rand(-10, 40) + '%';
+    f.style.setProperty('--fx', rand(-40, 40) + 'px');
+    f.style.animationDuration = rand(6, 12) + 's';
+    f.style.animationDelay = rand(0, 8) + 's';
+    layer.appendChild(f);
+  }
+}
+
+function spawnConfetti() {
+  const layer = document.getElementById('confetti-layer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  const colors = ['#f0c95a', '#d4af37', '#7c5cff', '#e33d3d', '#4ade80'];
+  for (let i = 0; i < 40; i++) {
+    const p = document.createElement('span');
+    p.className = 'confetti-piece';
+    p.style.left = rand(0, 100) + '%';
+    p.style.background = pick(colors);
+    p.style.animationDuration = rand(1800, 3200) + 'ms';
+    p.style.animationDelay = rand(0, 500) + 'ms';
+    layer.appendChild(p);
+  }
+}
+
+function spawnCrack() {
+  const el = document.getElementById('crack-overlay');
+  if (!el) return;
+  const lines = Array.from({ length: 5 }, () => {
+    const x1 = rand(30, 70), y1 = rand(30, 60);
+    const x2 = x1 + rand(-30, 30), y2 = y1 + rand(20, 45);
+    return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#e33d3d" stroke-width="0.6" fill="none" opacity="0.55"/>`;
+  }).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">${lines}</svg>`;
+  el.style.backgroundImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
 /* ---------------- 9. 전투 ---------------- */
 
 document.addEventListener('DOMContentLoaded', init);
@@ -709,12 +753,14 @@ function finishRun(victory) {
     document.getElementById('clear-items').textContent = itemNames;
     document.getElementById('clear-kills').textContent = run.kills;
     showScreen('screen-clear');
+    spawnConfetti();
   } else {
     document.getElementById('over-room').textContent = run.room;
     document.getElementById('over-kills').textContent = run.kills;
     document.getElementById('over-gold').textContent = goldEarned;
     document.getElementById('over-items').textContent = itemNames;
     showScreen('screen-gameover');
+    spawnCrack();
   }
   run = null;
 }
@@ -728,12 +774,18 @@ function renderUpgradeScreen() {
   UPGRADE_DEFS.forEach((def) => {
     const level = save.upgrades[def.key];
     const cost = upgradeCost(def.key, level);
+    const pipCount = Math.min(level, 10);
+    const pips = Array.from({ length: 10 }, (_, i) => {
+      const cls = i < pipCount ? (level > 10 ? 'filled overflow' : 'filled') : '';
+      return `<span class="upgrade-pip ${cls}"></span>`;
+    }).join('');
     const row = document.createElement('div');
     row.className = 'upgrade-item';
     row.innerHTML = `
       <div class="upgrade-info">
         <div class="upgrade-name">${def.name}</div>
         <div class="upgrade-level">Lv.${level} · ${def.desc}</div>
+        <div class="upgrade-pips">${pips}</div>
       </div>
       <button class="btn upgrade-buy" ${save.totalGold < cost ? 'disabled' : ''}>${cost} 💰</button>`;
     row.querySelector('button').addEventListener('click', () => buyUpgrade(def.key));
@@ -756,6 +808,7 @@ function buyUpgrade(key) {
 
 function renderTitleStats() {
   document.getElementById('hero-portrait').innerHTML = CHAR_ART.hero;
+  spawnFireflies();
   document.getElementById('stat-best-floor').textContent = save.bestFloor;
   document.getElementById('stat-total-gold').textContent = save.totalGold;
   document.getElementById('stat-play-count').textContent = save.playCount;

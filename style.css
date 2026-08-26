@@ -37,8 +37,12 @@ html, body {
   overflow: hidden;
 }
 
-.screen { display: none; flex-direction: column; flex: 1; }
-.screen.active { display: flex; }
+.screen { display: none; flex-direction: column; flex: 1; position: relative; }
+.screen.active { display: flex; animation: screen-fade-in 0.35s ease; }
+@keyframes screen-fade-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
 .hidden { display: none !important; }
 
 /* ---------- 버튼 공통 ---------- */
@@ -79,7 +83,49 @@ html, body {
   padding: 24px;
   text-align: center;
   gap: 6px;
+  position: relative;
+  z-index: 1;
 }
+
+.fireflies {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.firefly {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  box-shadow: 0 0 6px 2px rgba(240, 201, 90, 0.7);
+  animation: firefly-float linear infinite;
+  opacity: 0;
+}
+@keyframes firefly-float {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 0.9; }
+  90% { opacity: 0.7; }
+  100% { transform: translate(var(--fx, 30px), -260px); opacity: 0; }
+}
+
+.title-frame {
+  position: relative;
+  padding: 6px 28px 14px;
+  margin-bottom: 6px;
+}
+.title-frame::before, .title-frame::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 10px;
+  width: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  opacity: 0.8;
+}
+.title-frame::before { left: 0; border-right: none; border-radius: 8px 0 0 8px; }
+.title-frame::after { right: 0; border-left: none; border-radius: 0 8px 8px 0; }
 
 .hero-portrait {
   width: 96px;
@@ -161,7 +207,10 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  box-shadow: inset 0 0 0 1px rgba(212,175,55,0.08);
+  transition: box-shadow 0.2s;
 }
+.stat-box:active { box-shadow: inset 0 0 0 1px rgba(212,175,55,0.35), 0 0 12px rgba(212,175,55,0.2); }
 
 .stat-label { font-size: 11px; color: var(--text-dim); }
 .stat-value { font-size: 18px; font-weight: 700; color: var(--gold-bright); }
@@ -196,6 +245,9 @@ html, body {
   text-align: center;
   gap: 8px;
   position: relative;
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 15%, rgba(255,159,67,0.08), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 80% 85%, rgba(124,92,255,0.08), transparent 60%);
 }
 .encounter-card.shake { animation: screen-shake 0.3s; }
 @keyframes screen-shake {
@@ -203,6 +255,18 @@ html, body {
   25% { transform: translateX(-6px); }
   75% { transform: translateX(6px); }
 }
+
+.corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(212, 175, 55, 0.45);
+  pointer-events: none;
+}
+.corner-tl { top: 10px; left: 10px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+.corner-tr { top: 10px; right: 10px; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+.corner-bl { bottom: 10px; left: 10px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+.corner-br { bottom: 10px; right: 10px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
 
 .room-badge {
   color: var(--text-dim);
@@ -251,6 +315,7 @@ html, body {
   border: 1px solid var(--border-line);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04);
 }
 
 .hp-bar-fill {
@@ -258,6 +323,14 @@ html, body {
   width: 100%;
   background: linear-gradient(180deg, #ff6b6b, var(--hp-red));
   transition: width 0.3s ease;
+  position: relative;
+}
+.hp-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.35), transparent);
 }
 
 .hp-text {
@@ -357,6 +430,43 @@ html, body {
 }
 .result-stats p { margin: 6px 0; font-size: 14px; display: flex; justify-content: space-between; }
 
+/* ---------- 클리어 컨페티 ---------- */
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(560px) rotate(540deg); opacity: 0.3; }
+}
+
+/* ---------- 게임오버 균열 ---------- */
+.crack-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 90% 90%;
+  animation: crack-appear 0.8s ease-out forwards;
+}
+@keyframes crack-appear {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
 /* ---------- 업그레이드 화면 ---------- */
 .upgrade-wrap {
   flex: 1;
@@ -383,7 +493,16 @@ html, body {
 }
 .upgrade-info { text-align: left; }
 .upgrade-name { font-size: 14px; font-weight: 700; }
-.upgrade-level { font-size: 12px; color: var(--text-dim); }
+.upgrade-level { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.upgrade-pips { display: flex; gap: 3px; }
+.upgrade-pip {
+  width: 10px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--border-line);
+}
+.upgrade-pip.filled { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 4px rgba(212,175,55,0.5); }
+.upgrade-pip.overflow { background: linear-gradient(180deg, #a259ff, #6a2fd9); box-shadow: 0 0 4px rgba(162,89,255,0.6); }
 .upgrade-buy {
   min-height: 44px;
   padding: 0 14px;
