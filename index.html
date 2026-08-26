@@ -25,6 +25,11 @@
 
       <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
       <button id="btn-open-upgrade" class="btn btn-secondary">🛠️ 업그레이드</button>
+      <div class="title-menu-row">
+        <button id="btn-open-inventory" class="btn btn-tiny">🎒 인벤토리</button>
+        <button id="btn-open-shop" class="btn btn-tiny">🛒 상점</button>
+        <button id="btn-open-bestiary" class="btn btn-tiny">📖 도감</button>
+      </div>
 
       <div class="stat-summary">
         <div class="stat-box">
@@ -121,6 +126,36 @@
       <p class="upgrade-gold">보유 골드: <b id="upgrade-gold">0</b> 💰</p>
       <div id="upgrade-list" class="upgrade-list"></div>
       <button id="btn-upgrade-back" class="btn btn-secondary">뒤로 가기</button>
+    </div>
+  </section>
+
+  <!-- 인벤토리 화면 -->
+  <section id="screen-inventory" class="screen">
+    <div class="upgrade-wrap">
+      <h1 class="upgrade-title">🎒 인벤토리</h1>
+      <p class="upgrade-gold">장비를 탭하면 장착/해제됩니다</p>
+      <div id="inventory-list" class="upgrade-list"></div>
+      <button id="btn-inventory-back" class="btn btn-secondary">뒤로 가기</button>
+    </div>
+  </section>
+
+  <!-- 상점 화면 -->
+  <section id="screen-shop" class="screen">
+    <div class="upgrade-wrap">
+      <h1 class="upgrade-title">🛒 상점</h1>
+      <p class="upgrade-gold">보유 골드: <b id="shop-gold">0</b> 💰</p>
+      <div id="shop-list" class="upgrade-list"></div>
+      <button id="btn-shop-back" class="btn btn-secondary">뒤로 가기</button>
+    </div>
+  </section>
+
+  <!-- 몬스터 도감 화면 -->
+  <section id="screen-bestiary" class="screen">
+    <div class="upgrade-wrap">
+      <h1 class="upgrade-title">📖 몬스터 도감</h1>
+      <p class="upgrade-gold">처치한 몬스터만 도감에 기록됩니다</p>
+      <div id="bestiary-grid" class="bestiary-grid"></div>
+      <button id="btn-bestiary-back" class="btn btn-secondary">뒤로 가기</button>
     </div>
   </section>
 

@@ -65,6 +65,20 @@ const EQUIPMENT_POOL = {
   ],
 };
 const GRADE_WEIGHTS = [50, 25, 15, 7, 3]; // 일반~전설
+const GRADE_COLORS = { '일반': '#9ca3af', '고급': '#4ade80', '희귀': '#60a5fa', '영웅': '#a259ff', '전설': '#f0c95a' };
+
+const ABILITY_TEXT = {
+  dodge: '가끔 공격을 회피합니다',
+  guard: '가끔 방어 태세로 피해를 줄입니다',
+  regen: '매 턴 체력을 조금씩 회복합니다',
+  poison: '공격 시 확률로 중독시킵니다',
+  strongHit: '가끔 강력한 일격을 가합니다',
+  crit: '낮은 확률로 치명타를 가합니다',
+};
+function abilityText(m) {
+  const found = Object.keys(ABILITY_TEXT).filter((k) => m[k]);
+  return found.length ? found.map((k) => ABILITY_TEXT[k]).join(' · ') : '강력한 힘을 가진 몬스터입니다';
+}
 
 const UPGRADE_DEFS = [
   { key: 'atk',  name: '⚔️ 공격력 강화', desc: '공격력 +2', base: 100 },
@@ -118,6 +132,7 @@ function defaultSave() {
     upgrades: { atk: 0, def: 0, hp: 0, gold: 0, luck: 0 },
     inventory: [],
     equipped: { weapon: null, armor: null, ring: null },
+    bestiary: [],
     settings: { sound: true },
   };
 }
@@ -128,7 +143,14 @@ function loadSave() {
     if (!raw) return defaultSave();
     const parsed = JSON.parse(raw);
     const def = defaultSave();
-    return { ...def, ...parsed, upgrades: { ...def.upgrades, ...(parsed.upgrades || {}) }, settings: { ...def.settings, ...(parsed.settings || {}) } };
+    return {
+      ...def, ...parsed,
+      upgrades: { ...def.upgrades, ...(parsed.upgrades || {}) },
+      settings: { ...def.settings, ...(parsed.settings || {}) },
+      equipped: { ...def.equipped, ...(parsed.equipped || {}) },
+      inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
+      bestiary: Array.isArray(parsed.bestiary) ? parsed.bestiary : [],
+    };
   } catch (e) {
     return defaultSave();
   }
@@ -603,6 +625,7 @@ function onEnemyDefeated() {
   const goldGain = Math.round(c.enemy.gold * run.goldMult);
   run.gold += goldGain;
   run.kills += 1;
+  if (!save.bestiary.includes(c.enemy.key)) { save.bestiary.push(c.enemy.key); saveGame(); }
   sfx.gold();
   spawnSparkles('💰', 6);
   flashScreen('gain', 400);
@@ -804,6 +827,127 @@ function buyUpgrade(key) {
   renderUpgradeScreen();
 }
 
+/* ---------------- 12-1. 인벤토리 / 장비 화면 ---------------- */
+
+function itemStatsText(item) {
+  const parts = [];
+  if (item.atk) parts.push(`공격력 +${item.atk}`);
+  if (item.def) parts.push(`방어력 +${item.def}`);
+  if (item.hp) parts.push(`HP +${item.hp}`);
+  if (item.crit) parts.push(`치명타 +${item.crit}%`);
+  if (item.gold) parts.push(`골드 +${item.gold}%`);
+  return parts.join(' · ') || '보너스 없음';
+}
+
+const SLOT_LABEL = { weapon: '⚔️ 무기', armor: '🛡️ 갑옷', ring: '💍 반지' };
+
+function renderInventory() {
+  const list = document.getElementById('inventory-list');
+  list.innerHTML = '';
+  ['weapon', 'armor', 'ring'].forEach((slot) => {
+    const header = document.createElement('p');
+    header.className = 'inventory-slot-header';
+    header.textContent = SLOT_LABEL[slot];
+    list.appendChild(header);
+
+    const items = save.inventory.filter((i) => i.slot === slot);
+    if (!items.length) {
+      const empty = document.createElement('p');
+      empty.className = 'inventory-empty';
+      empty.textContent = '보유한 장비가 없습니다. 상점이나 보물방에서 찾아보세요.';
+      list.appendChild(empty);
+      return;
+    }
+    items.forEach((item) => {
+      const equipped = save.equipped[slot] && save.equipped[slot].id === item.id;
+      const row = document.createElement('div');
+      row.className = 'upgrade-item' + (equipped ? ' equipped' : '');
+      row.style.borderColor = GRADE_COLORS[item.grade];
+      row.innerHTML = `
+        <div class="upgrade-info">
+          <div class="upgrade-name">${item.name} <span class="grade-tag" style="color:${GRADE_COLORS[item.grade]}">${item.grade}</span></div>
+          <div class="upgrade-level">${itemStatsText(item)}</div>
+        </div>
+        <button class="btn upgrade-buy">${equipped ? '해제' : '장착'}</button>`;
+      row.querySelector('button').addEventListener('click', () => {
+        sfx.button();
+        save.equipped[slot] = equipped ? null : item;
+        saveGame();
+        renderInventory();
+      });
+      list.appendChild(row);
+    });
+  });
+}
+
+/* ---------------- 12-2. 상점 화면 ---------------- */
+
+let shopOffers = [];
+function generateShopOffers() {
+  const slots = ['weapon', 'armor', 'ring'];
+  return Array.from({ length: 3 }, () => {
+    const slot = pick(slots);
+    const gradeIdx = weightedGrade();
+    const item = { ...EQUIPMENT_POOL[slot][gradeIdx], slot, id: 'shop-' + Date.now() + '-' + rand(0, 9999) };
+    const price = (gradeIdx + 1) * 45 + rand(0, 25);
+    return { item, price };
+  });
+}
+
+function renderShop() {
+  document.getElementById('shop-gold').textContent = save.totalGold;
+  const list = document.getElementById('shop-list');
+  list.innerHTML = '';
+  if (shopOffers.every((o) => !o)) {
+    const p = document.createElement('p');
+    p.className = 'inventory-empty';
+    p.textContent = '오늘의 물건을 모두 구매했습니다. 다음에 다시 들러주세요!';
+    list.appendChild(p);
+    return;
+  }
+  shopOffers.forEach((offer, idx) => {
+    if (!offer) return;
+    const row = document.createElement('div');
+    row.className = 'upgrade-item';
+    row.style.borderColor = GRADE_COLORS[offer.item.grade];
+    row.innerHTML = `
+      <div class="upgrade-info">
+        <div class="upgrade-name">${offer.item.name} <span class="grade-tag" style="color:${GRADE_COLORS[offer.item.grade]}">${offer.item.grade}</span></div>
+        <div class="upgrade-level">${itemStatsText(offer.item)}</div>
+      </div>
+      <button class="btn upgrade-buy" ${save.totalGold < offer.price ? 'disabled' : ''}>${offer.price} 💰</button>`;
+    row.querySelector('button').addEventListener('click', () => {
+      if (save.totalGold < offer.price) return;
+      sfx.gold();
+      save.totalGold -= offer.price;
+      save.inventory.push(offer.item);
+      shopOffers[idx] = null;
+      saveGame();
+      renderShop();
+    });
+    list.appendChild(row);
+  });
+}
+
+/* ---------------- 12-3. 몬스터 도감 화면 ---------------- */
+
+function renderBestiary() {
+  const grid = document.getElementById('bestiary-grid');
+  grid.innerHTML = '';
+  [...ENEMIES, ...BOSSES].forEach((m) => {
+    const discovered = save.bestiary.includes(m.key);
+    const cell = document.createElement('div');
+    cell.className = 'bestiary-cell' + (discovered ? '' : ' locked');
+    cell.innerHTML = discovered
+      ? `<div class="bestiary-art">${CHAR_ART[m.key] || m.emoji}</div>
+         <div class="bestiary-name">${m.name}</div>
+         <div class="bestiary-stats">HP ${m.hp} · ATK ${m.atk} · DEF ${m.def}</div>
+         <div class="bestiary-ability">${abilityText(m)}</div>`
+      : `<div class="bestiary-art locked-art">❔</div><div class="bestiary-name">???</div>`;
+    grid.appendChild(cell);
+  });
+}
+
 /* ---------------- 13. 타이틀 화면 갱신 ---------------- */
 
 function renderTitleStats() {
@@ -827,6 +971,15 @@ function init() {
   document.getElementById('btn-clear-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-retry').addEventListener('click', () => { sfx.button(); startRun(false); });
   document.getElementById('btn-next-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
+
+  document.getElementById('btn-open-inventory').addEventListener('click', () => { sfx.button(); stopBgm(); renderInventory(); showScreen('screen-inventory'); });
+  document.getElementById('btn-inventory-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+
+  document.getElementById('btn-open-shop').addEventListener('click', () => { sfx.button(); stopBgm(); shopOffers = generateShopOffers(); renderShop(); showScreen('screen-shop'); });
+  document.getElementById('btn-shop-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+
+  document.getElementById('btn-open-bestiary').addEventListener('click', () => { sfx.button(); stopBgm(); renderBestiary(); showScreen('screen-bestiary'); });
+  document.getElementById('btn-bestiary-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-sound-toggle').addEventListener('click', () => {
     save.settings.sound = !save.settings.sound;
