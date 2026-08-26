@@ -105,6 +105,15 @@ const UPGRADE_DEFS = [
   { key: 'firstCrit', name: '🎯 선제 필살', desc: '매 전투 첫 공격 100% 치명타 (최대 Lv.1)', base: 500, maxLevel: 1 },
 ];
 
+/* --- 카드 뽑기: 확률이 공개된 상태에서 카드를 뽑아 즉시 효과를 받는다 --- */
+const CARD_POOL = [
+  { label: '골드 +25', chance: 45, apply: (r) => { r.gold += Math.round(25 * r.goldMult); } },
+  { label: '공격력 +4', chance: 25, apply: (r) => { r.atk += 4; } },
+  { label: '방어력 +3', chance: 15, apply: (r) => { r.def += 3; } },
+  { label: 'HP 15 회복', chance: 10, apply: (r) => { r.hp = Math.min(r.maxHp, r.hp + 15); } },
+  { label: '함정! HP -10', chance: 5, apply: (r) => { r.hp = Math.max(1, r.hp - 10); } },
+];
+
 const EVENTS = [
   {
     text: '수상한 상인을 만났습니다.',
@@ -153,6 +162,39 @@ const EVENTS = [
       { label: '거절한다', action: () => '해골을 무시하고 지나갔습니다.' },
     ],
   },
+  {
+    text: '방랑 상인이 낡은 무기를 감정해주겠다고 합니다.',
+    choices: [
+      { label: '30골드 주고 무기 강화 시도 (성공 확률 50%)', action: (r) => {
+          if (r.gold < 30) return '골드가 부족합니다.';
+          const w = save.equipped.weapon;
+          if (!w || !w.grade || w.grade === '레전더리') return '강화할 수 있는 무기가 없습니다.';
+          const idx = EQUIPMENT_POOL.weapon.findIndex((x) => x.grade === w.grade);
+          if (idx < 0 || idx >= EQUIPMENT_POOL.weapon.length - 1) return '이미 최고 등급의 무기입니다.';
+          r.gold -= 30;
+          if (Math.random() < 0.5) {
+            const upgraded = { ...EQUIPMENT_POOL.weapon[idx + 1], slot: 'weapon', id: 'forge-' + Date.now() };
+            save.inventory.push(upgraded);
+            save.equipped.weapon = upgraded;
+            return `강화 성공! [${upgraded.name}]으로 업그레이드되었습니다!`;
+          }
+          return '강화에 실패했습니다... 무기는 그대로입니다.';
+        } },
+      { label: '거절한다', action: () => '상인을 지나쳤습니다.' },
+    ],
+  },
+  {
+    text: '쓰러진 모험가를 발견했습니다.',
+    choices: [
+      { label: '물약을 나눠준다 (물약 1개 소모)', action: (r) => {
+          if (r.potions <= 0) return '나눠줄 물약이 없습니다.';
+          r.potions -= 1;
+          r.storyFlags.savedAdventurer = true;
+          return '모험가가 고마워하며 떠났습니다. 나중에 도움이 될지도 모릅니다...';
+        } },
+      { label: '무시한다', action: () => '모험가를 지나쳤습니다.' },
+    ],
+  },
 ];
 
 /* --- 유물: 방 4, 방 7에서 하나를 선택해 이번 던전에만 적용되는 특성을 얻는다 --- */
@@ -164,6 +206,22 @@ const RELICS = [
   { name: '거인의 심장', desc: '최대 HP +25, 대신 치명타 확률 -5%', apply: (r) => { r.maxHp += 25; r.hp += 25; r.critChance = Math.max(0.02, r.critChance - 0.05); } },
   { name: '민첩의 깃털', desc: '도망 성공 시 이탈 피해 없음, 대신 공격력 -2', apply: (r) => { r.fleeSafe = true; r.atk = Math.max(1, r.atk - 2); } },
 ];
+
+/* --- 유물 시너지: 특정 유물 조합을 함께 보유하면 추가 효과가 발동한다 --- */
+const RELIC_SYNERGIES = [
+  { pair: ['피의 반지', '거인의 심장'], name: '불사의 의지', desc: 'HP 완전 회복', apply: (r) => { r.hp = r.maxHp; } },
+  { pair: ['전사의 각오', '수호의 부적'], name: '전투의 달인', desc: '공격력 +3, 방어력 +2 추가 획득', apply: (r) => { r.atk += 3; r.def += 2; } },
+  { pair: ['탐욕의 인장', '민첩의 깃털'], name: '그림자 상인', desc: '골드 +20 즉시 획득', apply: (r) => { r.gold += Math.round(20 * r.goldMult); } },
+];
+
+/* --- 장비 세트 효과: 무기/갑옷/반지가 모두 같은 등급이면 추가 보너스 --- */
+const SET_BONUS_BY_GRADE = {
+  '일반': { atk: 1, def: 1 },
+  '고급': { atk: 2, def: 2, hp: 5 },
+  '희귀': { atk: 4, def: 3, hp: 8, crit: 2 },
+  '영웅': { atk: 6, def: 5, hp: 12, crit: 3 },
+  '전설': { atk: 10, def: 7, hp: 20, crit: 5 },
+};
 
 /* --- 업적: 조건 충족 시 1회 해금, 보너스 골드 지급 --- */
 const ACHIEVEMENTS = [
@@ -227,6 +285,9 @@ function defaultSave() {
     pet: null,
     shopOffers: null,
     dailyQuests: null,
+    killCounts: {},
+    huntsClaimed: [],
+    lastSeen: null,
     settings: { sound: true, hardcore: false },
   };
 }
@@ -248,6 +309,9 @@ function loadSave() {
       pet: parsed.pet || null,
       shopOffers: Array.isArray(parsed.shopOffers) ? parsed.shopOffers : null,
       dailyQuests: parsed.dailyQuests || null,
+      killCounts: (parsed.killCounts && typeof parsed.killCounts === 'object') ? parsed.killCounts : {},
+      huntsClaimed: Array.isArray(parsed.huntsClaimed) ? parsed.huntsClaimed : [],
+      lastSeen: parsed.lastSeen || null,
     };
   } catch (e) {
     return defaultSave();
@@ -338,7 +402,7 @@ function playBgm(theme) {
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function weightedRoomType() {
-  const table = [['normal', 36], ['strong', 32], ['treasure', 8], ['heal', 7], ['event', 9], ['ambush', 8]];
+  const table = [['normal', 33], ['strong', 30], ['treasure', 7], ['heal', 6], ['event', 8], ['ambush', 8], ['cards', 8]];
   let r = Math.random() * 100;
   for (const [type, w] of table) { if (r < w) return type; r -= w; }
   return 'normal';
@@ -371,11 +435,19 @@ function enemyScaleMult() {
 }
 function equippedBonus() {
   const bonus = { atk: 0, def: 0, hp: 0, crit: 0, gold: 0 };
+  const { weapon, armor, ring } = save.equipped;
   Object.values(save.equipped).forEach((item) => {
     if (!item) return;
     bonus.atk += item.atk || 0; bonus.def += item.def || 0; bonus.hp += item.hp || 0;
     bonus.crit += item.crit || 0; bonus.gold += item.gold || 0;
   });
+  if (weapon && armor && ring && weapon.grade === armor.grade && armor.grade === ring.grade) {
+    const set = SET_BONUS_BY_GRADE[weapon.grade];
+    if (set) {
+      bonus.atk += set.atk || 0; bonus.def += set.def || 0; bonus.hp += set.hp || 0;
+      bonus.crit += set.crit || 0;
+    }
+  }
   return bonus;
 }
 function upgradeCost(key, level) {
@@ -408,6 +480,8 @@ function newRun() {
     combo: 0,
     autoBattle: false,
     relics: [],
+    synergiesApplied: [],
+    storyFlags: {},
     itemsGained: [],
     roomTypes: buildRoomSequence(),
     combat: null, // { enemy, enemyHp, enemyHpMax, isBoss, poisonTurns, guardActive }
@@ -449,16 +523,18 @@ function startRun(resumed) {
 
 function makeCombat(enemyBase, isBoss, fleeLeft) {
   const golden = !isBoss && Math.random() < 0.05;
+  const elite = !isBoss && !golden && Math.random() < 0.04;
   const mult = enemyScaleMult();
+  const eliteMult = elite ? 1.5 : 1;
   const enemy = {
     ...enemyBase,
-    hp: Math.round(enemyBase.hp * mult),
-    atk: Math.round(enemyBase.atk * (1 + (mult - 1) * 0.5)),
+    hp: Math.round(enemyBase.hp * mult * eliteMult),
+    atk: Math.round(enemyBase.atk * (1 + (mult - 1) * 0.5) * (elite ? 1.3 : 1)),
   };
   return {
     enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss,
     poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false,
-    guardActive: false, fleeLeft, golden, queue: [],
+    guardActive: false, fleeLeft, golden, elite, queue: [],
   };
 }
 
@@ -478,7 +554,15 @@ function enterRoom() {
     playBgm('boss');
     flashScreen('boss', 600);
     renderCombat(true);
-    setLog(`${boss.name}이(가) 앞을 가로막습니다!`);
+    if (run.storyFlags.savedAdventurer && !run.storyFlags.adventurerHelped) {
+      const strike = Math.round(run.combat.enemyHpMax * 0.1);
+      run.combat.enemyHp = Math.max(1, run.combat.enemyHp - strike);
+      run.storyFlags.adventurerHelped = true;
+      updateEnemyHpBar();
+      setLog(`${boss.name}이(가) 앞을 가로막습니다! 구했던 모험가가 나타나 선제공격으로 ${strike}의 피해를 입혔습니다!`);
+    } else {
+      setLog(`${boss.name}이(가) 앞을 가로막습니다!`);
+    }
   } else if (type === 'miniboss') {
     const mini = { ...pick(MINIBOSSES) };
     run.combat = makeCombat(mini, false, 1);
@@ -494,7 +578,9 @@ function enterRoom() {
     run.combat = makeCombat(enemy, false, 2);
     playBgm('battle');
     renderCombat(false);
-    setLog(run.combat.golden ? `✨ 황금빛 ${enemy.name}이(가) 나타났습니다! 골드 3배!` : `${enemy.name}이(가) 나타났습니다!`);
+    setLog(run.combat.golden ? `✨ 황금빛 ${enemy.name}이(가) 나타났습니다! 골드 3배!`
+      : run.combat.elite ? `💢 강화된 ${enemy.name}이(가) 나타났습니다! 처치 시 장비 확정 획득!`
+      : `${enemy.name}이(가) 나타났습니다!`);
   } else if (type === 'ambush') {
     const pool = ENEMIES.filter(e => e.tier === 'normal');
     const first = { ...pick(pool) };
@@ -509,6 +595,11 @@ function enterRoom() {
     playBgm('dungeon');
     renderNonCombat('🔮', '고대의 제단', '유물 하나를 선택할 수 있습니다.');
     resolveRelic();
+  } else if (type === 'cards') {
+    run.combat = null;
+    playBgm('dungeon');
+    renderNonCombat('🎴', '신비한 카드 뭉치', '카드를 뽑으면 확률에 따라 효과가 적용됩니다.');
+    resolveCards();
   } else if (type === 'treasure') {
     run.combat = null;
     playBgm('dungeon');
@@ -532,8 +623,8 @@ function renderCombat(isBoss) {
   const c = run.combat;
   const art = CHAR_ART[c.enemy.key];
   document.getElementById('enemy-emoji').innerHTML = art || c.enemy.emoji;
-  document.getElementById('enemy-emoji').className = 'enemy-emoji' + (isBoss ? ' boss-enter' : '') + (c.golden ? ' golden' : '');
-  document.getElementById('enemy-name').textContent = c.enemy.name + (c.golden ? ' ✨' : '');
+  document.getElementById('enemy-emoji').className = 'enemy-emoji' + (isBoss ? ' boss-enter' : '') + (c.golden ? ' golden' : '') + (c.elite ? ' elite' : '');
+  document.getElementById('enemy-name').textContent = c.enemy.name + (c.golden ? ' ✨' : '') + (c.elite ? ' 💢 엘리트' : '');
   document.getElementById('enemy-hp').textContent = c.enemyHp;
   document.getElementById('enemy-hp-max').textContent = c.enemyHpMax;
   document.getElementById('enemy-hp-fill').style.width = '100%';
@@ -982,10 +1073,24 @@ function onEnemyDefeated() {
   if (!save.bestiary.includes(c.enemy.key)) { save.bestiary.push(c.enemy.key); saveGame(); }
   addQuestProgress('kills', 1);
   if (c.isBoss) addQuestProgress('boss', 1);
+  trackKillAndChallenge(c.enemy.key);
   sfx.gold();
   spawnSparkles('💰', c.golden ? 12 : 6);
   flashScreen('gain', 400);
-  setLog(`${c.enemy.name}을(를) 처치! 골드 +${goldGain} 💰`);
+  let defeatMsg = `${c.enemy.name}을(를) 처치! 골드 +${goldGain} 💰`;
+  if (c.elite) {
+    const slot = pick(['weapon', 'armor', 'ring']);
+    const gradeIdx = weightedGrade();
+    const item = { ...EQUIPMENT_POOL[slot][gradeIdx], slot, id: 'elite-' + Date.now() + '-' + rand(0, 999) };
+    save.inventory.push(item);
+    run.itemsGained.push(item);
+    const curScore = itemScore(save.equipped[slot]);
+    if (!save.equipped[slot] || itemScore(item) > curScore) save.equipped[slot] = item;
+    saveGame();
+    defeatMsg += ` 💢 엘리트 보상: [${item.name}] 획득!`;
+    spawnSparkles('✨', 6);
+  }
+  setLog(defeatMsg);
   document.getElementById('enemy-hp-fill').style.width = '0%';
 
   if (c.queue && c.queue.length) {
@@ -1141,13 +1246,48 @@ function resolveRelic() {
       relic.apply(run);
       run.relics.push(relic.name);
       addQuestProgress('relics', 1);
-      setLog(`유물 [${relic.name}] 획득!`);
+      let msg = `유물 [${relic.name}] 획득!`;
+      const synergy = RELIC_SYNERGIES.find((s) =>
+        !run.synergiesApplied.includes(s.name) && s.pair.every((n) => run.relics.includes(n)));
+      if (synergy) {
+        synergy.apply(run);
+        run.synergiesApplied.push(synergy.name);
+        msg += ` ✨ 시너지 발동! [${synergy.name}] - ${synergy.desc}`;
+        flashScreen('gain', 500);
+        spawnSparkles('✨', 8);
+      }
+      setLog(msg);
       panel.classList.add('hidden');
       panel.innerHTML = '';
       updateHud();
       showNextRoomButton();
     });
     panel.appendChild(btn);
+  });
+  document.getElementById('action-bar').classList.add('hidden');
+}
+
+function resolveCards() {
+  const panel = document.getElementById('event-panel');
+  panel.classList.remove('hidden');
+  const oddsHtml = CARD_POOL.map((c) => `<div class="card-odds-row"><span>${c.label}</span><span>${c.chance}%</span></div>`).join('');
+  panel.innerHTML = `
+    <p>카드를 뽑으면 아래 확률대로 효과가 적용됩니다.</p>
+    <div class="card-odds-list">${oddsHtml}</div>
+    <button id="btn-draw-card" class="btn btn-secondary">🎴 카드 뽑기</button>`;
+  document.getElementById('btn-draw-card').addEventListener('click', () => {
+    sfx.gold();
+    let r = Math.random() * 100;
+    let drawn = CARD_POOL[CARD_POOL.length - 1];
+    for (const c of CARD_POOL) { if (r < c.chance) { drawn = c; break; } r -= c.chance; }
+    drawn.apply(run);
+    setLog(`🎴 [${drawn.label}] 카드를 뽑았습니다! (확률 ${drawn.chance}%)`);
+    flashScreen(drawn.chance <= 10 ? (drawn.label.includes('함정') ? 'heal' : 'gain') : 'gain', 400);
+    spawnSparkles(drawn.label.includes('함정') ? '💥' : '✨', 6);
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+    updateHud();
+    showNextRoomButton();
   });
   document.getElementById('action-bar').classList.add('hidden');
 }
@@ -1244,6 +1384,21 @@ function checkAchievements(result) {
   });
   if (unlocked.length) saveGame();
   return unlocked;
+}
+
+/* --- 헌터 챌린지: 몬스터를 10마리 처치할 때마다 도감에서 골드 보상 --- */
+const HUNTER_TARGET = 10;
+const HUNTER_REWARD = 30;
+function trackKillAndChallenge(key) {
+  save.killCounts[key] = (save.killCounts[key] || 0) + 1;
+  if (save.killCounts[key] === HUNTER_TARGET && !save.huntsClaimed.includes(key)) {
+    save.huntsClaimed.push(key);
+    save.totalGold += HUNTER_REWARD;
+    const mon = [...ENEMIES, ...MINIBOSSES, ...BOSSES].find((m) => m.key === key);
+    setLog(`🏹 헌터 챌린지 달성! ${mon ? mon.name : ''} ${HUNTER_TARGET}마리 처치 (+${HUNTER_REWARD}💰)`);
+    flashScreen('gain', 400);
+  }
+  saveGame();
 }
 
 /* ---------------- 11-1. 일일 퀘스트 ---------------- */
@@ -1521,13 +1676,17 @@ function renderBestiary() {
   grid.innerHTML = '';
   [...ENEMIES, ...MINIBOSSES, ...BOSSES].forEach((m) => {
     const discovered = save.bestiary.includes(m.key);
+    const kills = save.killCounts[m.key] || 0;
+    const claimed = save.huntsClaimed.includes(m.key);
+    const huntText = claimed ? `🏹 헌터 챌린지 완료 (${kills}마리)` : `🏹 처치: ${Math.min(kills, HUNTER_TARGET)} / ${HUNTER_TARGET}`;
     const cell = document.createElement('div');
     cell.className = 'bestiary-cell' + (discovered ? '' : ' locked');
     cell.innerHTML = discovered
       ? `<div class="bestiary-art">${CHAR_ART[m.key] || m.emoji}</div>
          <div class="bestiary-name">${m.name}</div>
          <div class="bestiary-stats">HP ${m.hp} · ATK ${m.atk} · DEF ${m.def}</div>
-         <div class="bestiary-ability">${abilityText(m)}</div>`
+         <div class="bestiary-ability">${abilityText(m)}</div>
+         <div class="bestiary-hunt">${huntText}</div>`
       : `<div class="bestiary-art locked-art">❔</div><div class="bestiary-name">???</div>`;
     grid.appendChild(cell);
   });
@@ -1551,6 +1710,29 @@ function renderAchievements() {
       </div>`;
     list.appendChild(row);
   });
+}
+
+/* ---------------- 12-5. 웰컴백 보상 ---------------- */
+
+function checkWelcomeBackReward() {
+  const now = Date.now();
+  const last = save.lastSeen;
+  save.lastSeen = now;
+  if (last) {
+    const hoursAway = (now - last) / 3600000;
+    if (hoursAway >= 6) {
+      const petBonus = save.pet ? petEffectiveAtk(save.pet) : 0;
+      const reward = Math.min(120, Math.round(hoursAway * 4) + petBonus * 2);
+      if (reward > 0) {
+        save.totalGold += reward;
+        const panel = document.getElementById('welcome-back-panel');
+        document.getElementById('welcome-back-text').textContent =
+          `그동안 자리를 비운 사이${save.pet ? ' ' + save.pet.name + '가' : ''} 골드 ${reward}를 모아왔어요!`;
+        panel.classList.remove('hidden');
+      }
+    }
+  }
+  saveGame();
 }
 
 /* ---------------- 13. 타이틀 화면 갱신 ---------------- */
@@ -1636,7 +1818,14 @@ function handleClickerTap() {
 
 function init() {
   ensureDailyQuests();
+  checkWelcomeBackReward();
   renderTitleStats();
+
+  document.getElementById('btn-welcome-back-close').addEventListener('click', () => {
+    sfx.gold();
+    document.getElementById('welcome-back-panel').classList.add('hidden');
+    renderTitleStats();
+  });
 
   document.getElementById('btn-ultimate').addEventListener('click', playerUltimate);
   document.getElementById('btn-autobattle').addEventListener('click', toggleAutoBattle);
