@@ -259,6 +259,14 @@ const QUEST_POOL = [
   { id: 'boss',     type: 'boss',     target: 1,  desc: '보스 1마리 처치',    reward: 60 },
 ];
 
+/* --- 주간 도전과제: 일주일마다 큰 목표 하나가 배정되어 큰 골드 보상을 준다 --- */
+const WEEKLY_QUEST_POOL = [
+  { id: 'w_boss',  type: 'boss',       target: 10,  desc: '이번 주 보스 10마리 처치',  reward: 200 },
+  { id: 'w_clear', type: 'clears',     target: 5,   desc: '이번 주 던전 5회 클리어',   reward: 250 },
+  { id: 'w_kill',  type: 'kills',      target: 100, desc: '이번 주 몬스터 100마리 처치', reward: 200 },
+  { id: 'w_gold',  type: 'goldEarned', target: 500, desc: '이번 주 골드 500 획득',      reward: 180 },
+];
+
 /* --- 상점에서 구매 가능한 펫: 매 전투 자동으로 약간의 피해를 추가로 준다 --- */
 const PET_POOL = [
   { key: 'sprite', name: '🧚 꼬마 요정', atk: 2, price: 120, evolvedName: '🧚‍♀️ 요정 여왕', evolvedBonus: 4 },
@@ -303,6 +311,7 @@ function defaultSave() {
     pet: null,
     shopOffers: null,
     dailyQuests: null,
+    weeklyQuest: null,
     killCounts: {},
     huntsClaimed: [],
     lastSeen: null,
@@ -330,6 +339,7 @@ function loadSave() {
       pet: parsed.pet || null,
       shopOffers: Array.isArray(parsed.shopOffers) ? parsed.shopOffers : null,
       dailyQuests: parsed.dailyQuests || null,
+      weeklyQuest: parsed.weeklyQuest || null,
       killCounts: (parsed.killCounts && typeof parsed.killCounts === 'object') ? parsed.killCounts : {},
       huntsClaimed: Array.isArray(parsed.huntsClaimed) ? parsed.huntsClaimed : [],
       lastSeen: parsed.lastSeen || null,
@@ -1389,6 +1399,7 @@ function finishRun(victory) {
   save.shopOffers = null; // 던전을 한 판 다녀오면 상점이 새로 재입고된다
   const goldEarned = run.gold;
   save.totalGold += goldEarned;
+  if (goldEarned > 0) addQuestProgress('goldEarned', goldEarned);
   if (!run.bossRush) save.bestFloor = Math.max(save.bestFloor, run.room);
   if (victory) save.clearCount += 1;
   saveGame();
@@ -1471,6 +1482,13 @@ function todayKey() {
   return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
+function weekKey() {
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${week}`;
+}
+
 function ensureDailyQuests() {
   const today = todayKey();
   if (save.dailyQuests && save.dailyQuests.date === today) return;
@@ -1482,8 +1500,17 @@ function ensureDailyQuests() {
   saveGame();
 }
 
+function ensureWeeklyQuest() {
+  const wk = weekKey();
+  if (save.weeklyQuest && save.weeklyQuest.week === wk) return;
+  const def = pick(WEEKLY_QUEST_POOL);
+  save.weeklyQuest = { week: wk, id: def.id, progress: 0, claimed: false };
+  saveGame();
+}
+
 function addQuestProgress(type, amount) {
   ensureDailyQuests();
+  ensureWeeklyQuest();
   let changed = false;
   save.dailyQuests.quests.forEach((q) => {
     const def = QUEST_POOL.find((p) => p.id === q.id);
@@ -1492,7 +1519,25 @@ function addQuestProgress(type, amount) {
       changed = true;
     }
   });
+  const wq = save.weeklyQuest;
+  const wdef = WEEKLY_QUEST_POOL.find((p) => p.id === wq.id);
+  if (wdef && wdef.type === type && !wq.claimed && wq.progress < wdef.target) {
+    wq.progress = Math.min(wdef.target, wq.progress + amount);
+    changed = true;
+  }
   if (changed) saveGame();
+}
+
+function claimWeeklyQuestReward() {
+  ensureWeeklyQuest();
+  const wq = save.weeklyQuest;
+  const def = WEEKLY_QUEST_POOL.find((p) => p.id === wq.id);
+  if (!def || wq.claimed || wq.progress < def.target) return;
+  wq.claimed = true;
+  save.totalGold += def.reward;
+  sfx.gold();
+  saveGame();
+  renderQuests();
 }
 
 function claimQuestReward(id) {
@@ -1509,6 +1554,25 @@ function claimQuestReward(id) {
 
 function renderQuests() {
   ensureDailyQuests();
+  ensureWeeklyQuest();
+  const weeklyList = document.getElementById('weekly-quest-list');
+  weeklyList.innerHTML = '';
+  const wq = save.weeklyQuest;
+  const wdef = WEEKLY_QUEST_POOL.find((p) => p.id === wq.id);
+  if (wdef) {
+    const wdone = wq.progress >= wdef.target;
+    const wrow = document.createElement('div');
+    wrow.className = 'upgrade-item' + (wq.claimed ? ' equipped' : '');
+    wrow.innerHTML = `
+      <div class="upgrade-info">
+        <div class="upgrade-name">${wdef.desc}</div>
+        <div class="upgrade-level">진행도 ${Math.min(wq.progress, wdef.target)} / ${wdef.target} · 보상 ${wdef.reward}💰</div>
+      </div>
+      <button class="btn upgrade-buy" ${wq.claimed || !wdone ? 'disabled' : ''}>${wq.claimed ? '완료' : wdone ? '보상 받기' : '진행중'}</button>`;
+    if (wdone && !wq.claimed) wrow.querySelector('button').addEventListener('click', claimWeeklyQuestReward);
+    weeklyList.appendChild(wrow);
+  }
+
   const list = document.getElementById('quests-list');
   list.innerHTML = '';
   save.dailyQuests.quests.forEach((q) => {
