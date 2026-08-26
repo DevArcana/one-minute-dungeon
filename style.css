@@ -228,6 +228,23 @@ html, body {
   box-shadow: inset 0 0 0 1px rgba(240,201,90,0.3);
 }
 
+.achv-filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.achv-filter-btn {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-line);
+  color: var(--text-dim);
+}
+.achv-filter-btn.active {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  box-shadow: inset 0 0 0 1px rgba(240,201,90,0.3);
+}
+
 .btn-hardcore {
   width: 100%;
   max-width: 280px;

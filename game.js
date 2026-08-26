@@ -240,6 +240,15 @@ const SET_BONUS_BY_GRADE = {
 };
 
 /* --- 업적: 조건 충족 시 1회 해금, 보너스 골드 지급 --- */
+/* --- 업적: 마일스톤 생성 헬퍼로 대량 생성해 코드량을 최소화한다 --- */
+function totalKills(s) { return Object.values(s.killCounts || {}).reduce((a, b) => a + b, 0); }
+function milestones(prefix, name, descFn, values, bonusFn, checkFn) {
+  return values.map((v, i) => ({
+    id: `${prefix}_${v}`, name: `${name} ${v}`, desc: descFn(v),
+    bonus: bonusFn(i), check: (s, res) => checkFn(s, res, v),
+  }));
+}
+
 const ACHIEVEMENTS = [
   { id: 'first_clear',  name: '첫 승리',      desc: '던전을 처음으로 클리어한다',       bonus: 50,  check: (s, res) => res.victory },
   { id: 'no_potion',    name: '무병장수',      desc: '물약을 한 번도 쓰지 않고 클리어한다', bonus: 80,  check: (s, res) => res.victory && !res.usedPotion },
@@ -247,6 +256,75 @@ const ACHIEVEMENTS = [
   { id: 'clear_x3',     name: '베테랑 모험가', desc: '던전을 3회 클리어한다',            bonus: 100, check: (s) => s.clearCount >= 3 },
   { id: 'rich',         name: '거부',          desc: '누적 골드 1000을 달성한다',        bonus: 100, check: (s) => s.totalGold >= 1000 },
   { id: 'flawless',     name: '완벽한 승리',   desc: 'HP 절반 이하로 떨어지지 않고 클리어한다', bonus: 120, check: (s, res) => res.victory && !res.wasLowHp },
+
+  ...milestones('clear', '던전 클리어', (v) => `던전을 ${v}회 클리어한다`,
+    [1, 3, 5, 10, 15, 20, 30, 50, 75, 100], (i) => 30 + i * 25, (s, r, v) => s.clearCount >= v),
+
+  ...milestones('kills', '몬스터 사냥꾼', (v) => `몬스터를 누적 ${v}마리 처치한다`,
+    [10, 25, 50, 100, 200, 300, 500, 750, 1000, 1500], (i) => 20 + i * 20, (s, r, v) => totalKills(s) >= v),
+
+  ...milestones('gold', '재산가', (v) => `누적 골드 ${v}를 달성한다`,
+    [100, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000], (i) => 15 + i * 20, (s, r, v) => s.totalGold >= v),
+
+  ...ENEMIES.map((m) => ({
+    id: `mon_${m.key}`, name: `첫 만남: ${m.name}`, desc: `${m.name}을(를) 처음 처치한다`,
+    bonus: 15, check: (s) => s.bestiary.includes(m.key),
+  })),
+  ...BOSSES.map((b) => ({
+    id: `boss_${b.key}`, name: `보스 격파: ${b.name}`, desc: `${b.name}을(를) 처음 처치한다`,
+    bonus: 60, check: (s) => s.bestiary.includes(b.key),
+  })),
+  ...MINIBOSSES.map((m) => ({
+    id: `miniboss_${m.key}`, name: `미니보스 격파: ${m.name}`, desc: `${m.name}을(를) 처음 처치한다`,
+    bonus: 40, check: (s) => s.bestiary.includes(m.key),
+  })),
+
+  ...UPGRADE_DEFS.filter((u) => u.key !== 'firstCrit').flatMap((u) => [
+    { id: `up_${u.key}_5`, name: `${u.name} Lv.5`, desc: `${u.name}을(를) Lv.5까지 올린다`, bonus: 40, check: (s) => s.upgrades[u.key] >= 5 },
+    { id: `up_${u.key}_10`, name: `${u.name} Lv.10`, desc: `${u.name}을(를) Lv.10까지 올린다`, bonus: 80, check: (s) => s.upgrades[u.key] >= 10 },
+  ]),
+
+  ...['일반', '고급', '희귀', '영웅', '전설'].map((grade, i) => ({
+    id: `grade_${grade}`, name: `${grade} 등급 장비`, desc: `${grade} 등급 장비를 보유한다`,
+    bonus: 15 + i * 15, check: (s) => s.inventory.some((it) => it.grade === grade),
+  })),
+
+  ...milestones('relic', '유물 수집가', (v) => `서로 다른 유물 ${v}종을 만난다`,
+    [1, 3, 6], (i) => 30 + i * 30, (s, r, v) => s.relicsSeen.length >= v),
+
+  { id: 'pet_owned',   name: '첫 동료',      desc: '펫을 하나 이상 보유한다', bonus: 30, check: (s) => !!s.pet },
+  { id: 'pet_max',     name: '완숙한 동료',  desc: '펫을 Lv.10까지 강화한다', bonus: 80, check: (s) => s.pet && s.pet.level >= 10 },
+  { id: 'pet_evolved', name: '전설의 동료',  desc: '펫을 진화시킨다(Lv.10 도달)', bonus: 80, check: (s) => s.pet && s.pet.level >= 10 },
+
+  ...milestones('hardcore', '하드코어 정복자', (v) => `하드코어 모드로 ${v}회 클리어한다`,
+    [1, 5, 10], (i) => 100 + i * 80, (s, r, v) => (s.hardcoreClears || 0) >= v),
+
+  ...milestones('bossrush', '보스 러시 챔피언', (v) => `보스 러시를 ${v}회 클리어한다`,
+    [1, 5, 10], (i) => 60 + i * 60, (s, r, v) => (s.bossRushClears || 0) >= v),
+
+  ...milestones('elite', '엘리트 헌터', (v) => `엘리트 몬스터를 ${v}마리 처치한다`,
+    [1, 10, 50], (i) => 30 + i * 40, (s, r, v) => (s.eliteKills || 0) >= v),
+
+  ...milestones('golden', '황금 사냥꾼', (v) => `황금 몬스터를 ${v}마리 처치한다`,
+    [1, 10, 50], (i) => 30 + i * 40, (s, r, v) => (s.goldenKills || 0) >= v),
+
+  ...milestones('flee', '재빠른 발놀림', (v) => `도망에 ${v}회 성공한다`,
+    [1, 20, 100], (i) => 15 + i * 25, (s, r, v) => (s.fleeSuccessCount || 0) >= v),
+
+  ...milestones('daily', '성실한 모험가', (v) => `일일 퀘스트를 누적 ${v}개 완료한다`,
+    [10, 50, 150], (i) => 40 + i * 40, (s, r, v) => (s.dailyQuestsClaimedTotal || 0) >= v),
+
+  ...milestones('weekly', '주간 도전자', (v) => `주간 도전과제를 누적 ${v}개 완료한다`,
+    [1, 5, 15], (i) => 60 + i * 60, (s, r, v) => (s.weeklyQuestsClaimedTotal || 0) >= v),
+
+  ...milestones('play', '던전 단골', (v) => `던전에 ${v}회 입장한다`,
+    [10, 25, 50, 100, 200], (i) => 15 + i * 20, (s, r, v) => s.playCount >= v),
+
+  ...milestones('floor', '깊은 곳까지', (v) => `${v}번째 방까지 도달한다`,
+    [3, 5, 7, 9, 10], (i) => 15 + i * 15, (s, r, v) => s.bestFloor >= v),
+
+  ...milestones('speed', '스피드러너', (v) => `클리어 기록 ${v}초 이내를 달성한다`,
+    [60, 45, 30], (i) => 60 + i * 40, (s, r, v) => s.bestClearTime !== null && s.bestClearTime <= v),
 ];
 
 /* --- 일일 퀘스트: 매일 날짜가 바뀌면 3개가 새로 주어지고, 달성하면 보상을 받는다 --- */
@@ -318,6 +396,13 @@ function defaultSave() {
     idleGold: { accumulated: 0, lastTick: Date.now() },
     lastClass: 'warrior',
     relicsSeen: [],
+    eliteKills: 0,
+    goldenKills: 0,
+    fleeSuccessCount: 0,
+    hardcoreClears: 0,
+    bossRushClears: 0,
+    dailyQuestsClaimedTotal: 0,
+    weeklyQuestsClaimedTotal: 0,
     settings: { sound: true, hardcore: false },
   };
 }
@@ -1119,6 +1204,7 @@ function playerFlee() {
   c.fleeLeft -= 1;
   const success = Math.random() < 0.6;
   if (success) {
+    save.fleeSuccessCount = (save.fleeSuccessCount || 0) + 1;
     const parting = run.fleeSafe ? 0 : Math.max(1, Math.round(c.enemy.atk * 0.35) - Math.round(run.def * 0.3));
     run.hp = Math.max(0, run.hp - parting);
     if (parting > 0) showDamageFloat('-' + parting, '');
@@ -1142,6 +1228,8 @@ function onEnemyDefeated() {
   run.gold += goldGain;
   run.kills += 1;
   if (!save.bestiary.includes(c.enemy.key)) { save.bestiary.push(c.enemy.key); saveGame(); }
+  if (c.elite) { save.eliteKills = (save.eliteKills || 0) + 1; }
+  if (c.golden) { save.goldenKills = (save.goldenKills || 0) + 1; }
   addQuestProgress('kills', 1);
   if (c.isBoss) addQuestProgress('boss', 1);
   trackKillAndChallenge(c.enemy.key);
@@ -1416,7 +1504,11 @@ function finishRun(victory) {
   save.totalGold += goldEarned;
   if (goldEarned > 0) addQuestProgress('goldEarned', goldEarned);
   if (!run.bossRush) save.bestFloor = Math.max(save.bestFloor, run.room);
-  if (victory) save.clearCount += 1;
+  if (victory) {
+    save.clearCount += 1;
+    if (save.settings.hardcore) save.hardcoreClears = (save.hardcoreClears || 0) + 1;
+    if (run.bossRush) save.bossRushClears = (save.bossRushClears || 0) + 1;
+  }
   saveGame();
 
   if (victory) { addQuestProgress('clears', 1); addQuestProgress('rooms', 1); }
@@ -1550,6 +1642,7 @@ function claimWeeklyQuestReward() {
   if (!def || wq.claimed || wq.progress < def.target) return;
   wq.claimed = true;
   save.totalGold += def.reward;
+  save.weeklyQuestsClaimedTotal = (save.weeklyQuestsClaimedTotal || 0) + 1;
   sfx.gold();
   saveGame();
   renderQuests();
@@ -1562,6 +1655,7 @@ function claimQuestReward(id) {
   if (!q || !def || q.claimed || q.progress < def.target) return;
   q.claimed = true;
   save.totalGold += def.reward;
+  save.dailyQuestsClaimedTotal = (save.dailyQuestsClaimedTotal || 0) + 1;
   sfx.gold();
   saveGame();
   renderQuests();
@@ -1854,12 +1948,20 @@ function renderRelicCompendium() {
 
 /* ---------------- 12-4. 업적 화면 ---------------- */
 
+let achievementsFilter = 'all'; // 'all' | 'done' | 'todo'
+
 function renderAchievements() {
   const done = ACHIEVEMENTS.filter((a) => save.achievements.includes(a.id)).length;
   document.getElementById('achievements-progress').textContent = `${done} / ${ACHIEVEMENTS.length} 달성`;
   const list = document.getElementById('achievements-list');
   list.innerHTML = '';
-  ACHIEVEMENTS.forEach((a) => {
+  const shown = ACHIEVEMENTS.filter((a) => {
+    const unlocked = save.achievements.includes(a.id);
+    if (achievementsFilter === 'done') return unlocked;
+    if (achievementsFilter === 'todo') return !unlocked;
+    return true;
+  });
+  shown.forEach((a) => {
     const unlocked = save.achievements.includes(a.id);
     const row = document.createElement('div');
     row.className = 'upgrade-item' + (unlocked ? ' equipped' : '');
@@ -1869,6 +1971,9 @@ function renderAchievements() {
         <div class="upgrade-level">${a.desc} · 보상 ${a.bonus}💰</div>
       </div>`;
     list.appendChild(row);
+  });
+  document.querySelectorAll('.achv-filter-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.filter === achievementsFilter);
   });
 }
 
@@ -2068,6 +2173,9 @@ function init() {
   document.getElementById('btn-bestiary-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-open-achievements').addEventListener('click', () => { sfx.button(); stopBgm(); renderAchievements(); showScreen('screen-achievements'); });
+  document.querySelectorAll('.achv-filter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => { sfx.button(); achievementsFilter = btn.dataset.filter; renderAchievements(); });
+  });
   document.getElementById('btn-achievements-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-open-quests').addEventListener('click', () => { sfx.button(); stopBgm(); renderQuests(); showScreen('screen-quests'); });
