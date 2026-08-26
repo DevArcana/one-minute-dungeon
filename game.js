@@ -166,6 +166,37 @@ const sfx = {
   over:   () => { tone(160, 0.5, 'sawtooth', 0.08); },
 };
 
+/* --- 배경음악: 외부 음원 없이 짧은 음계를 반복해 절차적으로 생성 --- */
+const BGM_PATTERNS = {
+  title:   { notes: [392, 440, 523, 440, 392, 349, 392, 440], step: 480, wave: 'sine',     vol: 0.03 },
+  dungeon: { notes: [261, 329, 392, 329, 293, 349, 392, 349], step: 380, wave: 'triangle', vol: 0.035 },
+  battle:  { notes: [220, 220, 261, 220, 246, 220, 196, 220], step: 220, wave: 'square',   vol: 0.04 },
+  boss:    { notes: [130, 146, 164, 146, 110, 130, 98, 110],  step: 200, wave: 'sawtooth', vol: 0.045 },
+};
+let bgmTheme = null;
+let bgmTimer = null;
+
+function stopBgm() {
+  if (bgmTimer) clearTimeout(bgmTimer);
+  bgmTimer = null;
+  bgmTheme = null;
+}
+function playBgm(theme) {
+  if (bgmTheme === theme) return;
+  stopBgm();
+  bgmTheme = theme;
+  if (!save.settings.sound) return;
+  ensureAudio();
+  const pattern = BGM_PATTERNS[theme];
+  let i = 0;
+  (function loop() {
+    if (bgmTheme !== theme) return;
+    tone(pattern.notes[i % pattern.notes.length], (pattern.step / 1000) * 0.85, pattern.wave, pattern.vol);
+    i += 1;
+    bgmTimer = setTimeout(loop, pattern.step);
+  })();
+}
+
 /* ---------------- 4. 유틸 ---------------- */
 
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -273,24 +304,30 @@ function enterRoom() {
     const boss = { ...pick(BOSSES) };
     run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, guardActive: false };
     sfx.boss();
+    playBgm('boss');
+    flashScreen('boss', 600);
     renderCombat(true);
     setLog(`${boss.name}이(가) 앞을 가로막습니다!`);
   } else if (type === 'normal' || type === 'strong') {
     const pool = ENEMIES.filter(e => e.tier === type);
     const enemy = { ...pick(pool) };
     run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, guardActive: false };
+    playBgm('battle');
     renderCombat(false);
     setLog(`${enemy.name}이(가) 나타났습니다!`);
   } else if (type === 'treasure') {
     run.combat = null;
+    playBgm('dungeon');
     renderNonCombat('💰', '보물 상자', '반짝이는 상자를 발견했습니다.');
     resolveTreasure();
   } else if (type === 'heal') {
     run.combat = null;
+    playBgm('dungeon');
     renderNonCombat('✨', '휴식의 샘', '맑은 샘물이 흐르고 있습니다.');
     resolveHeal();
   } else if (type === 'event') {
     run.combat = null;
+    playBgm('dungeon');
     renderNonCombat('❓', '???', '무언가 이상한 기운이 느껴집니다.');
     resolveEvent();
   }
@@ -327,6 +364,7 @@ function updateHud() {
   document.getElementById('hud-def').textContent = run.def;
   document.getElementById('hud-gold').textContent = run.gold;
   document.getElementById('hud-room').textContent = run.room;
+  updateLowHpVignette();
 }
 
 function setLog(msg) { document.getElementById('battle-log').textContent = msg; }
@@ -353,6 +391,32 @@ function shakeScreen() {
 function hitEnemyAnim() {
   const em = document.getElementById('enemy-emoji');
   em.classList.remove('hit'); void em.offsetWidth; em.classList.add('hit');
+}
+
+function flashScreen(type, dur) {
+  const el = document.getElementById('fx-flash');
+  el.className = 'fx-flash ' + type;
+  setTimeout(() => { el.className = 'fx-flash'; }, dur || 500);
+}
+
+function spawnSparkles(emoji, count) {
+  const card = document.getElementById('encounter-card');
+  for (let i = 0; i < (count || 6); i++) {
+    const s = document.createElement('span');
+    s.className = 'sparkle';
+    s.textContent = emoji;
+    s.style.left = (30 + rand(0, 40)) + '%';
+    s.style.top = (35 + rand(0, 20)) + '%';
+    s.style.setProperty('--dx', rand(-40, 40) + 'px');
+    card.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+
+function updateLowHpVignette() {
+  const vignette = document.getElementById('fx-vignette');
+  const isLow = run && run.hp > 0 && run.hp / run.maxHp <= 0.3;
+  vignette.classList.toggle('low-hp', !!isLow);
 }
 
 /* ---------------- 9. 전투 ---------------- */
@@ -386,7 +450,7 @@ function playerAttack() {
   } else {
     c.enemyHp = Math.max(0, c.enemyHp - dmg);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
-    if (isCrit) { sfx.crit(); setLog(`치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
+    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
     else setLog(`${c.enemy.name}에게 ${dmg} 데미지!`);
   }
   updateEnemyHpBar();
@@ -420,7 +484,7 @@ function enemyTurn() {
 
   let dmg = Math.max(1, e.atk + rand(-2, 2) - run.def);
   let crit = false;
-  if (e.crit && Math.random() < e.crit) { dmg = Math.round(dmg * 1.8); crit = true; }
+  if (e.crit && Math.random() < e.crit) { dmg = Math.round(dmg * 1.8); crit = true; flashScreen('crit', 350); }
   if (e.strongHit && Math.random() < e.strongHit) { dmg = Math.round(dmg * 1.5); }
 
   run.hp = Math.max(0, run.hp - dmg);
@@ -452,6 +516,7 @@ function playerHeal() {
   const before = run.hp;
   run.hp = Math.min(run.maxHp, run.hp + heal);
   showDamageFloat('+' + (run.hp - before), 'heal-float');
+  flashScreen('heal', 350);
   setLog(`물약을 사용해 HP를 ${run.hp - before} 회복했습니다.`);
   updateHud(); updatePotionButton(); saveRun();
   setTimeout(enemyTurn, 400);
@@ -478,6 +543,8 @@ function onEnemyDefeated() {
   run.gold += goldGain;
   run.kills += 1;
   sfx.gold();
+  spawnSparkles('💰', 6);
+  flashScreen('gain', 400);
   setLog(`${c.enemy.name}을(를) 처치! 골드 +${goldGain} 💰`);
   document.getElementById('enemy-hp-fill').style.width = '0%';
   run.combat = null;
@@ -488,6 +555,7 @@ function onEnemyDefeated() {
 }
 
 function onPlayerDefeated() {
+  stopBgm();
   sfx.over();
   finishRun(false);
 }
@@ -514,12 +582,15 @@ function resolveTreasure() {
       run.itemsGained.push(item);
       applyEquipToRun();
       resultMsg = `${item.grade} 등급 장비 [${item.name}]을(를) 획득했습니다!`;
+      spawnSparkles('✨', 8);
     } else {
       const reward = pick(rewards);
       reward.apply(run);
       resultMsg = reward.label + ' 획득!';
+      spawnSparkles('💰', 6);
     }
     sfx.gold();
+    flashScreen('gain', 400);
     setLog(resultMsg);
     updateHud();
     showNextRoomButton();
@@ -540,6 +611,8 @@ function resolveHeal() {
     run.hp = run.maxHp;
     const bonusGold = Math.round(5 * run.goldMult);
     run.gold += bonusGold;
+    flashScreen('heal', 400);
+    spawnSparkles('✨', 6);
     setLog(`HP를 모두 회복했습니다! (+${run.hp - before}) 골드 +${bonusGold}`);
     updateHud();
     showNextRoomButton();
@@ -609,6 +682,7 @@ function finishRun(victory) {
   const itemNames = run.itemsGained.length ? run.itemsGained.map(i => `${i.name}(${i.grade})`).join(', ') : '없음';
 
   if (victory) {
+    stopBgm();
     const bonus = Math.round(30 * run.goldMult);
     save.totalGold += bonus;
     saveGame();
@@ -676,19 +750,32 @@ function init() {
   renderTitleStats();
 
   document.getElementById('btn-enter-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
-  document.getElementById('btn-open-upgrade').addEventListener('click', () => { sfx.button(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
-  document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); });
-  document.getElementById('btn-over-upgrade').addEventListener('click', () => { sfx.button(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
-  document.getElementById('btn-clear-upgrade').addEventListener('click', () => { sfx.button(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
+  document.getElementById('btn-open-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
+  document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+  document.getElementById('btn-over-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
+  document.getElementById('btn-clear-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-retry').addEventListener('click', () => { sfx.button(); startRun(false); });
   document.getElementById('btn-next-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
 
   document.getElementById('btn-sound-toggle').addEventListener('click', () => {
     save.settings.sound = !save.settings.sound;
-    if (save.settings.sound) ensureAudio();
     saveGame();
     renderTitleStats();
+    if (save.settings.sound) {
+      ensureAudio();
+      const theme = document.getElementById('screen-title').classList.contains('active') ? 'title' : bgmTheme;
+      if (theme) { bgmTheme = null; playBgm(theme); }
+    } else {
+      stopBgm();
+    }
   });
+
+  // 브라우저 자동재생 제한 대응: 첫 상호작용 이후에만 오디오 활성화
+  document.addEventListener('pointerdown', function firstInteract() {
+    ensureAudio();
+    if (document.getElementById('screen-title').classList.contains('active')) playBgm('title');
+    document.removeEventListener('pointerdown', firstInteract);
+  }, { once: true });
 
   // 새로고침 시 진행 중이던 던전 복원
   const savedRun = loadRun();
