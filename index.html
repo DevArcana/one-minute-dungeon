@@ -30,26 +30,39 @@
       </div>
       <p class="game-desc">방을 돌파하고 보물을 얻으세요.<br>10번째 방의 보스를 쓰러뜨리면 승리합니다.</p>
 
-      <div class="class-select-row" id="class-select-row">
-        <button class="btn btn-tiny class-btn" data-class="warrior">⚔️ 전사</button>
-        <button class="btn btn-tiny class-btn" data-class="rogue">🗡️ 도적</button>
-        <button class="btn btn-tiny class-btn" data-class="mage">🔮 마법사</button>
+      <div class="title-section">
+        <p class="title-section-label">모험가 선택</p>
+        <div class="class-select-row" id="class-select-row">
+          <button class="btn btn-tiny class-btn" data-class="warrior">⚔️ 전사</button>
+          <button class="btn btn-tiny class-btn" data-class="rogue">🗡️ 도적</button>
+          <button class="btn btn-tiny class-btn" data-class="mage">🔮 마법사</button>
+        </div>
+        <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
+        <button id="btn-boss-rush" class="btn btn-secondary hidden">👑 보스 러시</button>
       </div>
-      <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
-      <button id="btn-open-upgrade" class="btn btn-secondary">🛠️ 업그레이드</button>
-      <div class="title-menu-row">
-        <button id="btn-open-inventory" class="btn btn-tiny">🎒 인벤토리</button>
-        <button id="btn-open-shop" class="btn btn-tiny">🛒 상점</button>
-        <button id="btn-open-bestiary" class="btn btn-tiny">📖 도감</button>
-        <button id="btn-open-achievements" class="btn btn-tiny">🏅 업적</button>
-        <button id="btn-open-quests" class="btn btn-tiny">🗒️ 퀘스트</button>
-      </div>
-      <button id="btn-boss-rush" class="btn btn-secondary hidden">👑 보스 러시</button>
-      <button id="btn-hardcore-toggle" class="btn btn-hardcore">☠️ 하드코어 모드: OFF</button>
 
-      <button id="btn-clicker" class="clicker-coin" aria-label="골드 채굴">🪙</button>
-      <p id="clicker-hint" class="clicker-hint">탭해서 골드 채굴하기</p>
-      <button id="btn-idle-vault" class="idle-vault hidden">⏳ 적립함 <span id="idle-vault-amount">0</span>💰 <span class="idle-vault-claim">받기</span></button>
+      <div class="title-divider"></div>
+
+      <div class="title-menu-grid">
+        <button id="btn-open-upgrade" class="btn btn-menu"><span class="btn-menu-icon">🛠️</span>업그레이드</button>
+        <button id="btn-open-inventory" class="btn btn-menu"><span class="btn-menu-icon">🎒</span>인벤토리</button>
+        <button id="btn-open-shop" class="btn btn-menu"><span class="btn-menu-icon">🛒</span>상점</button>
+        <button id="btn-open-bestiary" class="btn btn-menu"><span class="btn-menu-icon">📖</span>도감</button>
+        <button id="btn-open-achievements" class="btn btn-menu"><span class="btn-menu-icon">🏅</span>업적</button>
+        <button id="btn-open-quests" class="btn btn-menu"><span class="btn-menu-icon">🗒️</span>퀘스트</button>
+      </div>
+
+      <div class="title-divider"></div>
+
+      <div class="idle-widget">
+        <button id="btn-clicker" class="clicker-coin" aria-label="골드 채굴">🪙</button>
+        <div class="idle-widget-info">
+          <p id="clicker-hint" class="clicker-hint">탭해서 골드 채굴하기</p>
+          <button id="btn-idle-vault" class="idle-vault hidden">⏳ 적립함 <span id="idle-vault-amount">0</span>💰 <span class="idle-vault-claim">받기</span></button>
+        </div>
+      </div>
+
+      <button id="btn-hardcore-toggle" class="btn btn-hardcore">☠️ 하드코어 모드: OFF</button>
 
       <div class="stat-summary">
         <div class="stat-box">
