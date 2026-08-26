@@ -198,6 +198,7 @@ html, body {
   max-width: 280px;
   margin-bottom: 14px;
 }
+.title-menu-row .btn-tiny:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .btn-tiny {
   padding: 10px 4px;
   background: var(--bg-panel);

@@ -175,6 +175,16 @@ const ACHIEVEMENTS = [
   { id: 'flawless',     name: '완벽한 승리',   desc: 'HP 절반 이하로 떨어지지 않고 클리어한다', bonus: 120, check: (s, res) => res.victory && !res.wasLowHp },
 ];
 
+/* --- 일일 퀘스트: 매일 날짜가 바뀌면 3개가 새로 주어지고, 달성하면 보상을 받는다 --- */
+const QUEST_POOL = [
+  { id: 'kills',    type: 'kills',    target: 10, desc: '몬스터 10마리 처치', reward: 50 },
+  { id: 'rooms',    type: 'rooms',    target: 15, desc: '방 15개 통과',       reward: 45 },
+  { id: 'clears',   type: 'clears',   target: 1,  desc: '던전 1회 클리어',    reward: 70 },
+  { id: 'treasure', type: 'treasure', target: 3,  desc: '보물방 3번 방문',    reward: 40 },
+  { id: 'relics',   type: 'relics',   target: 2,  desc: '유물 2개 선택',      reward: 45 },
+  { id: 'boss',     type: 'boss',     target: 1,  desc: '보스 1마리 처치',    reward: 60 },
+];
+
 /* --- 상점에서 구매 가능한 펫: 매 전투 자동으로 약간의 피해를 추가로 준다 --- */
 const PET_POOL = [
   { key: 'sprite', name: '🧚 꼬마 요정', atk: 2, price: 120 },
@@ -215,6 +225,8 @@ function defaultSave() {
     bestiary: [],
     achievements: [],
     pet: null,
+    shopOffers: null,
+    dailyQuests: null,
     settings: { sound: true, hardcore: false },
   };
 }
@@ -234,6 +246,8 @@ function loadSave() {
       bestiary: Array.isArray(parsed.bestiary) ? parsed.bestiary : [],
       achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
       pet: parsed.pet || null,
+      shopOffers: Array.isArray(parsed.shopOffers) ? parsed.shopOffers : null,
+      dailyQuests: parsed.dailyQuests || null,
     };
   } catch (e) {
     return defaultSave();
@@ -966,6 +980,8 @@ function onEnemyDefeated() {
   run.gold += goldGain;
   run.kills += 1;
   if (!save.bestiary.includes(c.enemy.key)) { save.bestiary.push(c.enemy.key); saveGame(); }
+  addQuestProgress('kills', 1);
+  if (c.isBoss) addQuestProgress('boss', 1);
   sfx.gold();
   spawnSparkles('💰', c.golden ? 12 : 6);
   flashScreen('gain', 400);
@@ -1025,6 +1041,7 @@ function onPlayerDefeated() {
 /* ---------------- 10. 비전투 방 ---------------- */
 
 function resolveTreasure() {
+  addQuestProgress('treasure', 1);
   const rewards = [
     { label: '골드 +24', apply: (r) => { r.gold += Math.round(24 * r.goldMult); } },
     { label: '최대 HP +10', apply: (r) => { r.maxHp += 10; r.hp += 10; } },
@@ -1123,6 +1140,7 @@ function resolveRelic() {
       sfx.gold();
       relic.apply(run);
       run.relics.push(relic.name);
+      addQuestProgress('relics', 1);
       setLog(`유물 [${relic.name}] 획득!`);
       panel.classList.add('hidden');
       panel.innerHTML = '';
@@ -1142,6 +1160,7 @@ function showNextRoomButton() {
   document.getElementById('btn-next-room').addEventListener('click', () => {
     sfx.button();
     if (isLast) return;
+    addQuestProgress('rooms', 1);
     run.room += 1;
     restoreActionBar();
     enterRoom();
@@ -1166,11 +1185,14 @@ function restoreActionBar() {
 function finishRun(victory) {
   clearRunSave();
   stopAutoBattleLoop();
+  save.shopOffers = null; // 던전을 한 판 다녀오면 상점이 새로 재입고된다
   const goldEarned = run.gold;
   save.totalGold += goldEarned;
   save.bestFloor = Math.max(save.bestFloor, run.room);
   if (victory) save.clearCount += 1;
   saveGame();
+
+  if (victory) { addQuestProgress('clears', 1); addQuestProgress('rooms', 1); }
 
   const itemNames = run.itemsGained.length ? run.itemsGained.map(i => `${i.name}(${i.grade})`).join(', ') : '없음';
   const newlyUnlocked = checkAchievements({ victory, usedPotion: run.usedPotion, wasLowHp: run.wasLowHp });
@@ -1222,6 +1244,72 @@ function checkAchievements(result) {
   });
   if (unlocked.length) saveGame();
   return unlocked;
+}
+
+/* ---------------- 11-1. 일일 퀘스트 ---------------- */
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function ensureDailyQuests() {
+  const today = todayKey();
+  if (save.dailyQuests && save.dailyQuests.date === today) return;
+  const picked = [...QUEST_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  save.dailyQuests = {
+    date: today,
+    quests: picked.map((q) => ({ id: q.id, progress: 0, claimed: false })),
+  };
+  saveGame();
+}
+
+function addQuestProgress(type, amount) {
+  ensureDailyQuests();
+  let changed = false;
+  save.dailyQuests.quests.forEach((q) => {
+    const def = QUEST_POOL.find((p) => p.id === q.id);
+    if (def && def.type === type && !q.claimed && q.progress < def.target) {
+      q.progress = Math.min(def.target, q.progress + amount);
+      changed = true;
+    }
+  });
+  if (changed) saveGame();
+}
+
+function claimQuestReward(id) {
+  ensureDailyQuests();
+  const q = save.dailyQuests.quests.find((x) => x.id === id);
+  const def = QUEST_POOL.find((p) => p.id === id);
+  if (!q || !def || q.claimed || q.progress < def.target) return;
+  q.claimed = true;
+  save.totalGold += def.reward;
+  sfx.gold();
+  saveGame();
+  renderQuests();
+}
+
+function renderQuests() {
+  ensureDailyQuests();
+  const list = document.getElementById('quests-list');
+  list.innerHTML = '';
+  save.dailyQuests.quests.forEach((q) => {
+    const def = QUEST_POOL.find((p) => p.id === q.id);
+    if (!def) return;
+    const done = q.progress >= def.target;
+    const row = document.createElement('div');
+    row.className = 'upgrade-item' + (q.claimed ? ' equipped' : '');
+    row.innerHTML = `
+      <div class="upgrade-info">
+        <div class="upgrade-name">${def.desc}</div>
+        <div class="upgrade-level">진행도 ${Math.min(q.progress, def.target)} / ${def.target} · 보상 ${def.reward}💰</div>
+      </div>
+      <button class="btn upgrade-buy" ${q.claimed || !done ? 'disabled' : ''}>${q.claimed ? '완료' : done ? '보상 받기' : '진행중'}</button>`;
+    if (done && !q.claimed) row.querySelector('button').addEventListener('click', () => claimQuestReward(q.id));
+    list.appendChild(row);
+  });
+  const resetNote = document.getElementById('quests-reset-note');
+  if (resetNote) resetNote.textContent = '매일 자정에 새로운 퀘스트 3개로 초기화됩니다.';
 }
 
 /* ---------------- 12. 업그레이드 화면 ---------------- */
@@ -1322,7 +1410,6 @@ function renderInventory() {
 
 /* ---------------- 12-2. 상점 화면 ---------------- */
 
-let shopOffers = [];
 function generateShopOffers() {
   const slots = ['weapon', 'armor', 'ring'];
   return Array.from({ length: 3 }, () => {
@@ -1334,17 +1421,26 @@ function generateShopOffers() {
   });
 }
 
+function ensureShopOffers() {
+  if (!save.shopOffers) {
+    save.shopOffers = generateShopOffers();
+    saveGame();
+  }
+}
+
 function renderShop() {
+  ensureShopOffers();
   document.getElementById('shop-gold').textContent = save.totalGold;
   const list = document.getElementById('shop-list');
   list.innerHTML = '';
-  if (shopOffers.every((o) => !o)) {
+  const offers = save.shopOffers;
+  if (offers.every((o) => !o)) {
     const p = document.createElement('p');
     p.className = 'inventory-empty';
-    p.textContent = '오늘의 물건을 모두 구매했습니다. 다음에 다시 들러주세요!';
+    p.textContent = '오늘의 물건을 모두 구매했습니다. 던전을 다녀오면 새 물건이 들어옵니다!';
     list.appendChild(p);
   } else {
-    shopOffers.forEach((offer, idx) => {
+    offers.forEach((offer, idx) => {
       if (!offer) return;
       const row = document.createElement('div');
       row.className = 'upgrade-item';
@@ -1360,7 +1456,7 @@ function renderShop() {
         sfx.gold();
         save.totalGold -= offer.price;
         save.inventory.push(offer.item);
-        shopOffers[idx] = null;
+        save.shopOffers[idx] = null;
         saveGame();
         renderShop();
       });
@@ -1539,6 +1635,7 @@ function handleClickerTap() {
 /* ---------------- 14. 초기화 & 이벤트 바인딩 ---------------- */
 
 function init() {
+  ensureDailyQuests();
   renderTitleStats();
 
   document.getElementById('btn-ultimate').addEventListener('click', playerUltimate);
@@ -1563,7 +1660,7 @@ function init() {
   document.getElementById('btn-open-inventory').addEventListener('click', () => { sfx.button(); stopBgm(); renderInventory(); showScreen('screen-inventory'); });
   document.getElementById('btn-inventory-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
-  document.getElementById('btn-open-shop').addEventListener('click', () => { sfx.button(); stopBgm(); shopOffers = generateShopOffers(); renderShop(); showScreen('screen-shop'); });
+  document.getElementById('btn-open-shop').addEventListener('click', () => { sfx.button(); stopBgm(); renderShop(); showScreen('screen-shop'); });
   document.getElementById('btn-shop-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-open-bestiary').addEventListener('click', () => { sfx.button(); stopBgm(); renderBestiary(); showScreen('screen-bestiary'); });
@@ -1571,6 +1668,9 @@ function init() {
 
   document.getElementById('btn-open-achievements').addEventListener('click', () => { sfx.button(); stopBgm(); renderAchievements(); showScreen('screen-achievements'); });
   document.getElementById('btn-achievements-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+
+  document.getElementById('btn-open-quests').addEventListener('click', () => { sfx.button(); stopBgm(); renderQuests(); showScreen('screen-quests'); });
+  document.getElementById('btn-quests-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
 
   document.getElementById('btn-hardcore-toggle').addEventListener('click', () => {
     sfx.button();
