@@ -288,6 +288,7 @@ function defaultSave() {
     killCounts: {},
     huntsClaimed: [],
     lastSeen: null,
+    idleGold: { accumulated: 0, lastTick: Date.now() },
     settings: { sound: true, hardcore: false },
   };
 }
@@ -312,6 +313,9 @@ function loadSave() {
       killCounts: (parsed.killCounts && typeof parsed.killCounts === 'object') ? parsed.killCounts : {},
       huntsClaimed: Array.isArray(parsed.huntsClaimed) ? parsed.huntsClaimed : [],
       lastSeen: parsed.lastSeen || null,
+      idleGold: (parsed.idleGold && typeof parsed.idleGold === 'object')
+        ? { accumulated: parsed.idleGold.accumulated || 0, lastTick: parsed.idleGold.lastTick || Date.now() }
+        : def.idleGold,
     };
   } catch (e) {
     return defaultSave();
@@ -1735,7 +1739,42 @@ function checkWelcomeBackReward() {
   saveGame();
 }
 
-/* ---------------- 13. 타이틀 화면 갱신 ---------------- */
+/* ---------------- 12-6. 방치형 골드 적립함 ---------------- */
+const IDLE_GOLD_PER_MIN = 1;
+const IDLE_GOLD_CAP = 240;
+
+function tickIdleGold() {
+  const now = Date.now();
+  const vault = save.idleGold;
+  const minutesPassed = (now - vault.lastTick) / 60000;
+  if (minutesPassed > 0 && vault.accumulated < IDLE_GOLD_CAP) {
+    vault.accumulated = Math.min(IDLE_GOLD_CAP, vault.accumulated + minutesPassed * IDLE_GOLD_PER_MIN);
+  }
+  vault.lastTick = now;
+  saveGame();
+  renderIdleVault();
+}
+
+function renderIdleVault() {
+  const btn = document.getElementById('btn-idle-vault');
+  const amount = Math.floor(save.idleGold.accumulated);
+  document.getElementById('idle-vault-amount').textContent = amount;
+  btn.classList.toggle('hidden', amount <= 0);
+}
+
+function claimIdleGold() {
+  const amount = Math.floor(save.idleGold.accumulated);
+  if (amount <= 0) return;
+  sfx.gold();
+  save.totalGold += amount;
+  save.idleGold.accumulated = 0;
+  save.idleGold.lastTick = Date.now();
+  saveGame();
+  renderTitleStats();
+  renderIdleVault();
+}
+
+
 
 function renderTitleStats() {
   document.getElementById('hero-portrait').innerHTML = CHAR_ART.hero;
@@ -1819,7 +1858,11 @@ function handleClickerTap() {
 function init() {
   ensureDailyQuests();
   checkWelcomeBackReward();
+  tickIdleGold();
   renderTitleStats();
+  setInterval(tickIdleGold, 10000);
+
+  document.getElementById('btn-idle-vault').addEventListener('click', claimIdleGold);
 
   document.getElementById('btn-welcome-back-close').addEventListener('click', () => {
     sfx.gold();

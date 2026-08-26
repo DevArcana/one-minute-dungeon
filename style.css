@@ -253,6 +253,25 @@ html, body {
 #clicker-hint.warn { color: var(--danger); font-weight: 700; }
 .clicker-hint { font-size: 11px; color: var(--text-dim); margin: 0 0 18px; }
 
+.idle-vault {
+  display: block;
+  margin: -8px auto 18px;
+  padding: 6px 14px;
+  font-size: 12px;
+  min-height: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--gold);
+  color: var(--gold-bright);
+  border-radius: 20px;
+  animation: idle-vault-pulse 1.6s ease-in-out infinite;
+}
+.idle-vault.hidden { display: none; }
+.idle-vault-claim { color: var(--text-main); font-weight: 700; margin-left: 4px; }
+@keyframes idle-vault-pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(212,175,55,0.3); }
+  50% { box-shadow: 0 0 10px rgba(212,175,55,0.5); }
+}
+
 .clicker-popup {
   position: absolute;
   font-weight: 800;
