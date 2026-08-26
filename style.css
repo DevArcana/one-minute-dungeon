@@ -81,6 +81,19 @@ html, body {
   gap: 6px;
 }
 
+.hero-portrait {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.5));
+  animation: hero-bob 2.4s ease-in-out infinite;
+}
+.hero-portrait svg { width: 100%; height: 100%; }
+@keyframes hero-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
 .game-title {
   font-size: 34px;
   margin: 0;
@@ -200,10 +213,16 @@ html, body {
 
 .enemy-emoji {
   font-size: 72px;
+  width: 130px;
+  height: 130px;
   line-height: 1;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
   transition: transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.enemy-emoji svg { width: 100%; height: 100%; }
 .enemy-emoji.hit { animation: enemy-hit 0.3s; }
 @keyframes enemy-hit {
   0%, 100% { transform: translateX(0) scale(1); }
