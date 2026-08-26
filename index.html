@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>⚔️ 1분 던전</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 시작 화면 -->
+  <section id="screen-title" class="screen active">
+    <button id="btn-sound-toggle" class="sound-toggle" aria-label="사운드 켜기/끄기">🔊</button>
+    <div class="title-wrap">
+      <h1 class="game-title">⚔️ 1분 던전</h1>
+      <p class="game-subtitle">「죽을수록 강해진다.」</p>
+      <p class="game-desc">방을 돌파하고 보물을 얻으세요.<br>10번째 방의 보스를 쓰러뜨리면 승리합니다.</p>
+
+      <button id="btn-enter-dungeon" class="btn btn-primary">던전 입장</button>
+      <button id="btn-open-upgrade" class="btn btn-secondary">🛠️ 업그레이드</button>
+
+      <div class="stat-summary">
+        <div class="stat-box">
+          <span class="stat-label">최고 층</span>
+          <span class="stat-value" id="stat-best-floor">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">총 골드</span>
+          <span class="stat-value" id="stat-total-gold">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">플레이 횟수</span>
+          <span class="stat-value" id="stat-play-count">0</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 게임 화면 -->
+  <section id="screen-game" class="screen">
+    <header class="hud">
+      <div class="hud-row">
+        <span class="hud-item">❤️ <span id="hud-hp">50</span>/<span id="hud-hp-max">50</span></span>
+        <span class="hud-item">⚔️ <span id="hud-atk">5</span></span>
+        <span class="hud-item">🛡️ <span id="hud-def">2</span></span>
+      </div>
+      <div class="hud-row">
+        <span class="hud-item">💰 <span id="hud-gold">0</span></span>
+        <span class="hud-item">방 <span id="hud-room">1</span>/10</span>
+      </div>
+    </header>
+
+    <main class="encounter-card" id="encounter-card">
+      <p class="room-badge" id="room-badge">방 <span id="room-number">1</span> / 10</p>
+      <div class="enemy-emoji" id="enemy-emoji">👹</div>
+      <p class="enemy-name" id="enemy-name">고블린</p>
+      <div class="hp-bar-wrap">
+        <div class="hp-bar-fill" id="enemy-hp-fill"></div>
+      </div>
+      <p class="hp-text"><span id="enemy-hp">35</span> / <span id="enemy-hp-max">50</span></p>
+      <p class="battle-log" id="battle-log">던전에 입장했습니다.</p>
+      <div id="event-panel" class="event-panel hidden"></div>
+    </main>
+
+    <footer class="action-bar" id="action-bar">
+      <button id="btn-attack" class="btn btn-action btn-attack">⚔️ 공격</button>
+      <button id="btn-heal" class="btn btn-action btn-heal">🧪 회복(<span id="potion-count">2</span>)</button>
+      <button id="btn-flee" class="btn btn-action btn-flee">🏃 도망</button>
+    </footer>
+  </section>
+
+  <!-- 게임 오버 화면 -->
+  <section id="screen-gameover" class="screen">
+    <div class="result-wrap">
+      <h1 class="result-title over">💀 GAME OVER</h1>
+      <p class="result-sub">던전에서 쓰러졌습니다.</p>
+      <div class="result-stats">
+        <p>도달한 방: <b id="over-room">1</b> / 10</p>
+        <p>처치한 적: <b id="over-kills">0</b>마리</p>
+        <p>획득 골드: <b id="over-gold">0</b> 💰</p>
+        <p>획득 장비: <b id="over-items">없음</b></p>
+      </div>
+      <button id="btn-retry" class="btn btn-primary">다시 도전</button>
+      <button id="btn-over-upgrade" class="btn btn-secondary">업그레이드</button>
+    </div>
+  </section>
+
+  <!-- 클리어 화면 -->
+  <section id="screen-clear" class="screen">
+    <div class="result-wrap">
+      <h1 class="result-title win">🏆 DUNGEON CLEAR!</h1>
+      <p class="result-sub">던전을 정복했습니다!</p>
+      <div class="result-stats">
+        <p>클리어 시간: <b id="clear-time">0초</b></p>
+        <p>획득 골드: <b id="clear-gold">0</b> 💰 (보너스 포함)</p>
+        <p>획득 장비: <b id="clear-items">없음</b></p>
+        <p>처치한 적: <b id="clear-kills">0</b>마리</p>
+      </div>
+      <button id="btn-next-dungeon" class="btn btn-primary">다음 던전</button>
+      <button id="btn-clear-upgrade" class="btn btn-secondary">업그레이드</button>
+    </div>
+  </section>
+
+  <!-- 업그레이드 화면 -->
+  <section id="screen-upgrade" class="screen">
+    <div class="upgrade-wrap">
+      <h1 class="upgrade-title">🛠️ 영구 업그레이드</h1>
+      <p class="upgrade-gold">보유 골드: <b id="upgrade-gold">0</b> 💰</p>
+      <div id="upgrade-list" class="upgrade-list"></div>
+      <button id="btn-upgrade-back" class="btn btn-secondary">뒤로 가기</button>
+    </div>
+  </section>
+
+</div>
+<script src="game.js"></script>
+</body>
+</html>
