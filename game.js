@@ -11,18 +11,18 @@
 const ENEMIES = [
   { key: 'rat',      name: '거대 쥐',    emoji: '🐀', tier: 'normal', hp: 21, atk: 5,  def: 0, gold: 5  },
   { key: 'goblin',   name: '고블린',     emoji: '👺', tier: 'normal', hp: 29, atk: 6,  def: 1, gold: 8  },
-  { key: 'bat',      name: '동굴 박쥐',  emoji: '🦇', tier: 'normal', hp: 18, atk: 7,  def: 0, gold: 6, dodge: 0.18 },
+  { key: 'bat',      name: '동굴 박쥐',  emoji: '🦇', tier: 'normal', hp: 18, atk: 7,  def: 0, gold: 6, dodge: 0.18, stun: 0.12 },
   { key: 'skeleton', name: '해골 전사',  emoji: '💀', tier: 'normal', hp: 35, atk: 7,  def: 3, gold: 10, guard: 0.24 },
-  { key: 'zombie',   name: '좀비',       emoji: '🧟', tier: 'strong', hp: 51, atk: 5,  def: 2, gold: 9,  regen: 4 },
+  { key: 'zombie',   name: '좀비',       emoji: '🧟', tier: 'strong', hp: 51, atk: 5,  def: 2, gold: 9,  regen: 4, poison: 0.3 },
   { key: 'spider',   name: '독거미',     emoji: '🕷️', tier: 'strong', hp: 29, atk: 6,  def: 1, gold: 9,  poison: 0.42 },
   { key: 'orc',      name: '오크',       emoji: '👹', tier: 'strong', hp: 56, atk: 10, def: 3, gold: 14, strongHit: 0.32 },
-  { key: 'knight',   name: '지옥의 기사', emoji: '🔥', tier: 'strong', hp: 67, atk: 12, def: 4, gold: 20, crit: 0.26 },
+  { key: 'knight',   name: '지옥의 기사', emoji: '🔥', tier: 'strong', hp: 67, atk: 12, def: 4, gold: 20, crit: 0.26, burn: 0.35 },
 ];
 
 const BOSSES = [
-  { key: 'dragon', name: '고대 드래곤',  emoji: '🐉', hp: 166, atk: 18, def: 6, gold: 60, regen: 7,  strongHit: 0.28 },
-  { key: 'demon',  name: '마왕의 기사',  emoji: '👿', hp: 141, atk: 20, def: 7, gold: 55, guard: 0.26, strongHit: 0.3 },
-  { key: 'death',  name: '죽음의 군주',  emoji: '💀', hp: 122, atk: 16, def: 5, gold: 50, poison: 0.4,  crit: 0.18 },
+  { key: 'dragon', name: '고대 드래곤',  emoji: '🐉', hp: 166, atk: 18, def: 6, gold: 60, regen: 7,  strongHit: 0.28, burn: 0.3 },
+  { key: 'demon',  name: '마왕의 기사',  emoji: '👿', hp: 141, atk: 20, def: 7, gold: 55, guard: 0.26, strongHit: 0.3, stun: 0.15 },
+  { key: 'death',  name: '죽음의 군주',  emoji: '💀', hp: 122, atk: 16, def: 5, gold: 50, crit: 0.18, freeze: 0.35 },
 ];
 
 /* --- SD(데포르메)풍 캐릭터 SVG 아트: 외부 이미지 없이 코드로 직접 그림 --- */
@@ -71,9 +71,12 @@ const ABILITY_TEXT = {
   dodge: '가끔 공격을 회피합니다',
   guard: '가끔 방어 태세로 피해를 줄입니다',
   regen: '매 턴 체력을 조금씩 회복합니다',
-  poison: '공격 시 확률로 중독시킵니다',
+  poison: '공격 시 확률로 중독시킵니다 (지속 피해)',
   strongHit: '가끔 강력한 일격을 가합니다',
   crit: '낮은 확률로 치명타를 가합니다',
+  burn: '공격 시 확률로 화상을 입힙니다 (긴 지속 피해)',
+  freeze: '공격 시 확률로 빙결시켜 다음 공격력을 약화시킵니다',
+  stun: '낮은 확률로 기절시켜 다음 턴 행동을 막습니다',
 };
 function abilityText(m) {
   const found = Object.keys(ABILITY_TEXT).filter((k) => m[k]);
@@ -340,7 +343,7 @@ function enterRoom() {
 
   if (type === 'boss') {
     const boss = { ...pick(BOSSES) };
-    run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, guardActive: false, fleeLeft: 0 };
+    run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false, guardActive: false, fleeLeft: 0 };
     sfx.boss();
     playBgm('boss');
     flashScreen('boss', 600);
@@ -349,7 +352,7 @@ function enterRoom() {
   } else if (type === 'normal' || type === 'strong') {
     const pool = ENEMIES.filter(e => e.tier === type);
     const enemy = { ...pick(pool) };
-    run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, guardActive: false, fleeLeft: 2 };
+    run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false, guardActive: false, fleeLeft: 2 };
     playBgm('battle');
     renderCombat(false);
     setLog(`${enemy.name}이(가) 나타났습니다!`);
@@ -529,10 +532,24 @@ function playerAttack() {
   if (!run || !run.combat) return;
   const c = run.combat;
   setActionsLocked(true);
+
+  if (c.stunNext) {
+    c.stunNext = false;
+    setLog('기절해서 움직일 수 없습니다! 💫');
+    setTimeout(enemyTurn, 500);
+    return;
+  }
+
   sfx.attack();
   const isCrit = Math.random() < run.critChance;
   let dmg = Math.max(1, run.atk + rand(-2, 3) - c.enemy.def);
   if (isCrit) dmg = Math.round(dmg * 1.8);
+  let frozeMsg = '';
+  if (c.frozenNext) {
+    dmg = Math.max(1, Math.round(dmg * 0.6));
+    c.frozenNext = false;
+    frozeMsg = '(빙결로 위력 약화) ';
+  }
 
   if (c.enemy.dodge && Math.random() < c.enemy.dodge) {
     setLog(`${c.enemy.name}이(가) 공격을 회피했습니다!`);
@@ -545,8 +562,8 @@ function playerAttack() {
   } else {
     c.enemyHp = Math.max(0, c.enemyHp - dmg);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
-    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
-    else setLog(`${c.enemy.name}에게 ${dmg} 데미지!`);
+    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`${frozeMsg}치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
+    else setLog(`${frozeMsg}${c.enemy.name}에게 ${dmg} 데미지!`);
   }
   updateEnemyHpBar();
 
@@ -596,6 +613,23 @@ function enemyTurn() {
     showDamageFloat('-' + pdmg, 'poison');
   }
 
+  if (e.burn && Math.random() < e.burn) { c.burnTurns = 4; setLog(`${e.name}의 공격에 화상을 입었습니다! 🔥`); }
+  if (c.burnTurns > 0) {
+    const bdmg = 2;
+    run.hp = Math.max(0, run.hp - bdmg);
+    c.burnTurns -= 1;
+    showDamageFloat('-' + bdmg, 'burn');
+  }
+
+  if (e.freeze && Math.random() < e.freeze) {
+    c.frozenNext = true;
+    setLog(`${e.name}의 냉기에 얼어붙었습니다! 🧊 다음 공격이 약해집니다.`);
+  }
+  if (e.stun && Math.random() < e.stun) {
+    c.stunNext = true;
+    setLog(`${e.name}의 일격에 기절했습니다! 💫 다음 턴 행동이 불가능합니다.`);
+  }
+
   updateHud();
   saveRun();
   if (run.hp <= 0) { onPlayerDefeated(); return; }
@@ -607,6 +641,12 @@ function setLogSuffix(msg) { return msg; }
 function playerHeal() {
   if (!run || !run.combat || run.potions <= 0) return;
   setActionsLocked(true);
+  if (run.combat.stunNext) {
+    run.combat.stunNext = false;
+    setLog('기절해서 움직일 수 없습니다! 💫');
+    setTimeout(enemyTurn, 500);
+    return;
+  }
   sfx.button();
   run.potions -= 1;
   const heal = Math.round(run.maxHp * 0.25);
@@ -623,6 +663,12 @@ function playerFlee() {
   if (!run || !run.combat || run.combat.isBoss || run.combat.fleeLeft <= 0) return;
   const c = run.combat;
   setActionsLocked(true);
+  if (c.stunNext) {
+    c.stunNext = false;
+    setLog('기절해서 움직일 수 없습니다! 💫');
+    setTimeout(enemyTurn, 500);
+    return;
+  }
   sfx.button();
   c.fleeLeft -= 1;
   const success = Math.random() < 0.6;
