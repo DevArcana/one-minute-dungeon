@@ -1357,10 +1357,50 @@ function renderTitleStats() {
 
 /* --- 클리커: 타이틀 화면에서 탭해서 소량의 골드를 채굴 --- */
 let clickerLocked = false;
+let clickerPenalizedUntil = 0;
+let clickerHistory = []; // 최근 클릭 시각(ms) 기록 - 속도/패턴 감지용
+
+function isLikelyAutoClicker(now) {
+  // 최근 1분간 25회 초과 클릭 시 과도한 속도로 판단
+  clickerHistory = clickerHistory.filter((t) => now - t < 60000);
+  if (clickerHistory.length >= 25) return 'rate';
+
+  // 최근 6회 클릭 간격의 표준편차가 비정상적으로 작으면(기계처럼 일정) 오토클리커로 판단
+  if (clickerHistory.length >= 6) {
+    const recent = clickerHistory.slice(-6);
+    const intervals = [];
+    for (let i = 1; i < recent.length; i++) intervals.push(recent[i] - recent[i - 1]);
+    const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const variance = intervals.reduce((a, b) => a + (b - avg) ** 2, 0) / intervals.length;
+    const stdev = Math.sqrt(variance);
+    if (avg < 500 && stdev < 12) return 'pattern';
+  }
+  return null;
+}
+
 function handleClickerTap() {
+  const now = Date.now();
   if (clickerLocked) return;
+  if (now < clickerPenalizedUntil) return;
+
+  const reason = isLikelyAutoClicker(now);
+  if (reason) {
+    clickerPenalizedUntil = now + 5000;
+    const coin = document.getElementById('btn-clicker');
+    coin.classList.remove('shake'); void coin.offsetWidth; coin.classList.add('shake');
+    const hint = document.getElementById('clicker-hint');
+    hint.classList.add('warn');
+    hint.textContent = reason === 'pattern' ? '🤖 너무 일정한 속도예요! 5초 후 다시 시도해주세요.' : '⏳ 채굴 속도가 너무 빨라요! 5초 후 다시 시도해주세요.';
+    setTimeout(() => {
+      hint.classList.remove('warn');
+      hint.textContent = '탭해서 골드 채굴하기';
+    }, 5000);
+    return;
+  }
+
   clickerLocked = true;
-  setTimeout(() => { clickerLocked = false; }, 180);
+  setTimeout(() => { clickerLocked = false; }, 320);
+  clickerHistory.push(now);
 
   sfx.gold();
   const gain = rand(1, 3);

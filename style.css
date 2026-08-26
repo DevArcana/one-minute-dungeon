@@ -241,6 +241,15 @@ html, body {
   40% { transform: scale(1.15) rotate(-8deg); }
   100% { transform: scale(1); }
 }
+.clicker-coin.shake { animation: coin-shake 0.4s ease; filter: grayscale(0.6); }
+@keyframes coin-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px) rotate(-4deg); }
+  40% { transform: translateX(5px) rotate(4deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+#clicker-hint.warn { color: var(--danger); font-weight: 700; }
 .clicker-hint { font-size: 11px; color: var(--text-dim); margin: 0 0 18px; }
 
 .clicker-popup {
