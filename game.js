@@ -340,7 +340,7 @@ function enterRoom() {
 
   if (type === 'boss') {
     const boss = { ...pick(BOSSES) };
-    run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, guardActive: false };
+    run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, guardActive: false, fleeLeft: 0 };
     sfx.boss();
     playBgm('boss');
     flashScreen('boss', 600);
@@ -349,7 +349,7 @@ function enterRoom() {
   } else if (type === 'normal' || type === 'strong') {
     const pool = ENEMIES.filter(e => e.tier === type);
     const enemy = { ...pick(pool) };
-    run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, guardActive: false };
+    run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, guardActive: false, fleeLeft: 2 };
     playBgm('battle');
     renderCombat(false);
     setLog(`${enemy.name}이(가) 나타났습니다!`);
@@ -383,7 +383,15 @@ function renderCombat(isBoss) {
   document.getElementById('enemy-hp-fill').style.width = '100%';
   document.getElementById('room-badge').classList.remove('hidden');
   updatePotionButton();
-  document.getElementById('btn-flee').disabled = isBoss;
+  updateFleeButton();
+}
+
+function updateFleeButton() {
+  const btn = document.getElementById('btn-flee');
+  if (!btn || !run || !run.combat) return;
+  const c = run.combat;
+  btn.disabled = c.isBoss || c.fleeLeft <= 0;
+  btn.textContent = c.isBoss ? '🏃 도망 불가' : `🏃 도망(${c.fleeLeft})`;
 }
 
 function renderNonCombat(emoji, name, msg) {
@@ -393,6 +401,7 @@ function renderNonCombat(emoji, name, msg) {
   document.getElementById('enemy-hp').textContent = '-';
   document.getElementById('enemy-hp-max').textContent = '-';
   document.getElementById('enemy-hp-fill').style.width = '0%';
+  document.getElementById('action-bar').classList.add('hidden');
   setLog(msg);
 }
 
@@ -509,7 +518,10 @@ document.addEventListener('DOMContentLoaded', init);
 function setActionsLocked(locked) {
   ['btn-attack', 'btn-heal', 'btn-flee'].forEach((id) => {
     const el = document.getElementById(id);
-    if (el) el.disabled = locked || (id === 'btn-heal' && run && run.potions <= 0);
+    if (!el) return;
+    if (id === 'btn-heal') { el.disabled = locked || (run && run.potions <= 0); return; }
+    if (id === 'btn-flee') { el.disabled = locked || !run || !run.combat || run.combat.isBoss || run.combat.fleeLeft <= 0; return; }
+    el.disabled = locked;
   });
 }
 
@@ -562,6 +574,7 @@ function enemyTurn() {
     setLog(`${e.name}이(가) 방어 태세를 취합니다.`);
     updateEnemyHpBar();
     setActionsLocked(false);
+    updateFleeButton();
     return;
   }
 
@@ -587,6 +600,7 @@ function enemyTurn() {
   saveRun();
   if (run.hp <= 0) { onPlayerDefeated(); return; }
   setActionsLocked(false);
+  updateFleeButton();
 }
 function setLogSuffix(msg) { return msg; }
 
@@ -606,16 +620,25 @@ function playerHeal() {
 }
 
 function playerFlee() {
-  if (!run || !run.combat || run.combat.isBoss) return;
+  if (!run || !run.combat || run.combat.isBoss || run.combat.fleeLeft <= 0) return;
+  const c = run.combat;
   setActionsLocked(true);
   sfx.button();
+  c.fleeLeft -= 1;
   const success = Math.random() < 0.6;
   if (success) {
-    setLog('도망에 성공했습니다!');
+    const parting = Math.max(1, Math.round(c.enemy.atk * 0.35) - Math.round(run.def * 0.3));
+    run.hp = Math.max(0, run.hp - parting);
+    showDamageFloat('-' + parting, '');
+    setLog(`도망에 성공했지만 등을 스쳐 ${parting}의 피해를 입었습니다.`);
+    updateHud();
     run.combat = null;
+    saveRun();
+    if (run.hp <= 0) { onPlayerDefeated(); return; }
     setTimeout(showNextRoomButton, 500);
   } else {
-    setLog('도망에 실패했습니다!');
+    updateFleeButton();
+    setLog(run.combat.fleeLeft > 0 ? '도망에 실패했습니다!' : '도망에 실패했습니다! 더 이상 도망칠 수 없습니다.');
     setTimeout(enemyTurn, 400);
   }
 }
