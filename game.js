@@ -314,11 +314,17 @@ function baseStats() {
   const bestiaryBonus = save.bestiary.length >= 11 ? 0.05 : 0;
   return {
     maxHp: 50 + u.hp * 10,
-    atk: 5 + u.atk * 2,
+    atk: 5 + Math.round(u.atk * 1.5),
     def: 2 + u.def * 1,
     goldMult: 1 + u.gold * 0.1 + bestiaryBonus,
     critChance: 0.10 + u.luck * 0.01,
   };
+}
+
+/* 클리어를 거듭할수록 몬스터도 함께 강해져서, 업그레이드로 인한
+   일방적인 공격력 우위(2방컷)를 방지한다. */
+function enemyScaleMult() {
+  return 1 + Math.min(1.2, save.clearCount * 0.14 + Math.floor(save.playCount / 4) * 0.05);
 }
 function equippedBonus() {
   const bonus = { atk: 0, def: 0, hp: 0, crit: 0, gold: 0 };
@@ -394,8 +400,14 @@ function startRun(resumed) {
   enterRoom();
 }
 
-function makeCombat(enemy, isBoss, fleeLeft) {
+function makeCombat(enemyBase, isBoss, fleeLeft) {
   const golden = !isBoss && Math.random() < 0.05;
+  const mult = enemyScaleMult();
+  const enemy = {
+    ...enemyBase,
+    hp: Math.round(enemyBase.hp * mult),
+    atk: Math.round(enemyBase.atk * (1 + (mult - 1) * 0.5)),
+  };
   return {
     enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss,
     poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false,
@@ -1285,6 +1297,31 @@ function renderTitleStats() {
   hcBtn.classList.toggle('active', save.settings.hardcore);
 }
 
+/* --- 클리커: 타이틀 화면에서 탭해서 소량의 골드를 채굴 --- */
+let clickerLocked = false;
+function handleClickerTap() {
+  if (clickerLocked) return;
+  clickerLocked = true;
+  setTimeout(() => { clickerLocked = false; }, 180);
+
+  sfx.gold();
+  const gain = rand(1, 3);
+  save.totalGold += gain;
+  saveGame();
+  document.getElementById('stat-total-gold').textContent = save.totalGold;
+
+  const coin = document.getElementById('btn-clicker');
+  coin.classList.remove('bounce'); void coin.offsetWidth; coin.classList.add('bounce');
+
+  const popup = document.createElement('span');
+  popup.className = 'clicker-popup';
+  popup.textContent = '+' + gain;
+  popup.style.left = (40 + rand(-15, 15)) + '%';
+  popup.style.top = rand(0, 10) + 'px';
+  coin.parentElement.appendChild(popup);
+  setTimeout(() => popup.remove(), 700);
+}
+
 /* ---------------- 14. 초기화 & 이벤트 바인딩 ---------------- */
 
 function init() {
@@ -1317,6 +1354,8 @@ function init() {
     saveGame();
     renderTitleStats();
   });
+
+  document.getElementById('btn-clicker').addEventListener('click', handleClickerTap);
 
   document.getElementById('btn-sound-toggle').addEventListener('click', () => {
     save.settings.sound = !save.settings.sound;
