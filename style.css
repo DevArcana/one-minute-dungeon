@@ -625,6 +625,11 @@ html, body {
   box-shadow: 0 0 0 2px var(--gold-bright), 0 0 12px rgba(212,175,55,0.3);
 }
 .grade-tag { font-size: 11px; font-weight: 700; margin-left: 4px; }
+.grade-tag.legendary { animation: legendary-glow 1.6s ease-in-out infinite; }
+@keyframes legendary-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
 
 /* ---------- 몬스터 도감 ---------- */
 .bestiary-grid {

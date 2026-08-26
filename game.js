@@ -65,7 +65,14 @@ const EQUIPMENT_POOL = {
   ],
 };
 const GRADE_WEIGHTS = [50, 25, 15, 7, 3]; // 일반~전설
-const GRADE_COLORS = { '일반': '#9ca3af', '고급': '#4ade80', '희귀': '#60a5fa', '영웅': '#a259ff', '전설': '#f0c95a' };
+const GRADE_COLORS = { '일반': '#9ca3af', '고급': '#4ade80', '희귀': '#60a5fa', '영웅': '#a259ff', '전설': '#f0c95a', '레전더리': '#ff7a3c' };
+
+/* --- 레전더리 무기: 보스 처치 시 낮은 확률로 드롭되는 고유 특수효과 무기 --- */
+const LEGENDARY_WEAPONS = [
+  { name: "흡혈검 '카르페인'", grade: '레전더리', slot: 'weapon', atk: 14, special: 'lifesteal', specialText: '가한 피해의 15%만큼 HP 흡수' },
+  { name: "처형자의 도끼 '단두대'", grade: '레전더리', slot: 'weapon', atk: 18, special: 'execute', specialText: '적 HP 25% 이하일 때 피해 +60%' },
+  { name: "폭풍의 쌍검 '질풍'", grade: '레전더리', slot: 'weapon', atk: 12, crit: 8, special: 'doubleStrike', specialText: '30% 확률로 추가 타격 발동' },
+];
 
 const ABILITY_TEXT = {
   dodge: '가끔 공격을 회피합니다',
@@ -652,6 +659,8 @@ function playerAttack() {
   }
 
   sfx.attack();
+  const weapon = save.equipped.weapon;
+  const special = weapon && weapon.special;
   const guaranteedCrit = save.upgrades.firstCrit >= 1 && !c.firstAttackDone;
   c.firstAttackDone = true;
   const isCrit = guaranteedCrit || Math.random() < run.critChance;
@@ -663,7 +672,14 @@ function playerAttack() {
     c.frozenNext = false;
     frozeMsg = '(빙결로 위력 약화) ';
   }
+  let executeMsg = '';
+  if (special === 'execute' && c.enemyHp <= c.enemyHpMax * 0.25) {
+    dmg = Math.round(dmg * 1.6);
+    executeMsg = '처형! ';
+  }
 
+  let hitLanded = false;
+  let dealtDmg = 0;
   if (c.enemy.dodge && Math.random() < c.enemy.dodge) {
     setLog(`${c.enemy.name}이(가) 공격을 회피했습니다!`);
   } else if (c.guardActive) {
@@ -673,16 +689,33 @@ function playerAttack() {
     setLog(`${c.enemy.name}이(가) 방어했습니다! ${dmg} 데미지`);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
     run.combo = Math.min(COMBO_MAX, run.combo + 1);
+    hitLanded = true; dealtDmg = dmg;
   } else {
     c.enemyHp = Math.max(0, c.enemyHp - dmg);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
-    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`${guaranteedCrit ? '선제 필살! ' : ''}${frozeMsg}치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
-    else setLog(`${frozeMsg}${c.enemy.name}에게 ${dmg} 데미지!`);
+    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`${guaranteedCrit ? '선제 필살! ' : ''}${executeMsg}${frozeMsg}치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
+    else setLog(`${executeMsg}${frozeMsg}${c.enemy.name}에게 ${dmg} 데미지!`);
     run.combo = Math.min(COMBO_MAX, run.combo + 1);
+    hitLanded = true; dealtDmg = dmg;
   }
+
+  if (hitLanded && special === 'lifesteal' && dealtDmg > 0) {
+    const heal = Math.max(1, Math.round(dealtDmg * 0.15));
+    run.hp = Math.min(run.maxHp, run.hp + heal);
+    showDamageFloat('+' + heal, 'heal-float');
+  }
+  if (hitLanded && special === 'doubleStrike' && c.enemyHp > 0 && Math.random() < 0.3) {
+    const extraDmg = Math.max(1, Math.round(dealtDmg * 0.5));
+    c.enemyHp = Math.max(0, c.enemyHp - extraDmg);
+    showDamageFloat('-' + extraDmg, '');
+    setLog(`🌪️ 질풍의 추가 타격! ${extraDmg} 데미지 추가!`);
+    hitEnemyAnim();
+  }
+
   applyPetDamage();
   updateEnemyHpBar();
   updateComboUI();
+  updateHud();
 
   if (c.enemyHp <= 0) { onEnemyDefeated(); return; }
   setTimeout(enemyTurn, 500);
@@ -855,7 +888,9 @@ function onEnemyDefeated() {
     nextCombat.queue = c.queue;
     run.combat = nextCombat;
     updateHud();
+    setActionsLocked(true);
     setTimeout(() => {
+      if (!run || !run.combat) return;
       renderCombat(false);
       setLog(`이어서 ${next.name}이(가) 달려듭니다!`);
       restoreActionBar();
@@ -867,8 +902,28 @@ function onEnemyDefeated() {
   updateHud();
   updateComboUI();
 
-  if (c.isBoss) { setTimeout(() => finishRun(true), 700); return; }
+  if (c.isBoss) {
+    rollLegendaryDrop();
+    setTimeout(() => finishRun(true), 700);
+    return;
+  }
   setTimeout(showNextRoomButton, 700);
+}
+
+function rollLegendaryDrop() {
+  if (Math.random() >= 0.12) return;
+  const owned = save.inventory.map((i) => i.name);
+  const candidates = LEGENDARY_WEAPONS.filter((w) => !owned.includes(w.name));
+  if (!candidates.length) return;
+  const weapon = { ...pick(candidates), id: 'legend-' + Date.now() + '-' + rand(0, 999) };
+  save.inventory.push(weapon);
+  run.itemsGained.push(weapon);
+  const curScore = itemScore(save.equipped.weapon);
+  if (!save.equipped.weapon || itemScore(weapon) > curScore) save.equipped.weapon = weapon;
+  saveGame();
+  setLog(`🌟 전설의 무기 [${weapon.name}]을(를) 획득했습니다!`);
+  spawnSparkles('🌟', 10);
+  flashScreen('gain', 500);
 }
 
 function onPlayerDefeated() {
@@ -888,6 +943,7 @@ function resolveTreasure() {
     { label: 'HP 완전 회복', apply: (r) => { r.hp = r.maxHp; } },
   ];
   setTimeout(() => {
+    if (!run) return;
     let resultMsg;
     if (Math.random() < 0.3) {
       const slot = pick(['weapon', 'armor', 'ring']);
@@ -916,7 +972,7 @@ function resolveTreasure() {
 
 function itemScore(item) {
   if (!item) return 0;
-  return (item.atk || 0) + (item.def || 0) + (item.hp || 0) / 2 + (item.crit || 0) + (item.gold || 0);
+  return (item.atk || 0) + (item.def || 0) + (item.hp || 0) / 2 + (item.crit || 0) + (item.gold || 0) + (item.special ? 12 : 0);
 }
 function applyEquipToRun() {
   // 장비 변경 시 현재 런 스탯에 즉시 반영(간단화를 위해 재계산하지 않고 유지)
@@ -924,6 +980,7 @@ function applyEquipToRun() {
 
 function resolveHeal() {
   setTimeout(() => {
+    if (!run) return;
     const bonusGold = Math.round(5 * run.goldMult);
     run.gold += bonusGold;
     flashScreen('heal', 400);
@@ -1124,6 +1181,7 @@ function itemStatsText(item) {
   if (item.hp) parts.push(`HP +${item.hp}`);
   if (item.crit) parts.push(`치명타 +${item.crit}%`);
   if (item.gold) parts.push(`골드 +${item.gold}%`);
+  if (item.specialText) parts.push(`✨ ${item.specialText}`);
   return parts.join(' · ') || '보너스 없음';
 }
 
@@ -1153,7 +1211,7 @@ function renderInventory() {
       row.style.borderColor = GRADE_COLORS[item.grade];
       row.innerHTML = `
         <div class="upgrade-info">
-          <div class="upgrade-name">${item.name} <span class="grade-tag" style="color:${GRADE_COLORS[item.grade]}">${item.grade}</span></div>
+          <div class="upgrade-name">${item.name} <span class="grade-tag${item.grade === '레전더리' ? ' legendary' : ''}" style="color:${GRADE_COLORS[item.grade]}">${item.grade}</span></div>
           <div class="upgrade-level">${itemStatsText(item)}</div>
         </div>
         <button class="btn upgrade-buy">${equipped ? '해제' : '장착'}</button>`;
