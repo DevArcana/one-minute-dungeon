@@ -89,6 +89,7 @@ const UPGRADE_DEFS = [
   { key: 'hp',   name: '❤️ 최대 HP 강화', desc: '최대 HP +10', base: 150 },
   { key: 'gold', name: '💰 골드 획득량 강화', desc: '골드 획득 +10%', base: 180 },
   { key: 'luck', name: '🍀 행운 강화', desc: '치명타 확률 +1%', base: 160 },
+  { key: 'firstCrit', name: '🎯 선제 필살', desc: '매 전투 첫 공격 100% 치명타 (최대 Lv.1)', base: 500, maxLevel: 1 },
 ];
 
 const EVENTS = [
@@ -119,6 +120,53 @@ const EVENTS = [
       { label: '체력을 원한다', action: (r) => { const h = Math.min(20, r.maxHp - r.hp); r.hp += h; return `HP +${h} 회복`; } },
     ],
   },
+  {
+    text: '저주받은 제단이 피의 계약을 제안합니다.',
+    choices: [
+      { label: '계약한다 (이번 던전 골드 2배, 회복 불가)', action: (r) => {
+          r.goldMult *= 2; r.cursedNoHeal = true; return '피의 계약을 맺었습니다! 골드 2배, 대신 더 이상 회복할 수 없습니다.';
+        } },
+      { label: '거절한다', action: () => '불길한 기운을 피해 지나갔습니다.' },
+    ],
+  },
+  {
+    text: '해골이 산 자의 활력을 탐냅니다.',
+    choices: [
+      { label: '최대 HP 15 넘기고 공격력+8 방어력+4', action: (r) => {
+          if (r.maxHp <= 15) return '너무 위험해서 포기했습니다.';
+          r.maxHp -= 15; r.hp = Math.min(r.hp, r.maxHp); r.atk += 8; r.def += 4;
+          return '생명력이 힘으로 바뀌었습니다. 공격력 +8, 방어력 +4';
+        } },
+      { label: '거절한다', action: () => '해골을 무시하고 지나갔습니다.' },
+    ],
+  },
+];
+
+/* --- 유물: 방 4, 방 7에서 하나를 선택해 이번 던전에만 적용되는 특성을 얻는다 --- */
+const RELICS = [
+  { name: '피의 반지', desc: '치명타 확률 +12%, 대신 최대 HP -15', apply: (r) => { r.critChance += 0.12; r.maxHp = Math.max(10, r.maxHp - 15); r.hp = Math.min(r.hp, r.maxHp); } },
+  { name: '전사의 각오', desc: '공격력 +6, 대신 방어력 -2', apply: (r) => { r.atk += 6; r.def = Math.max(0, r.def - 2); } },
+  { name: '수호의 부적', desc: '방어력 +5, 대신 공격력 -3', apply: (r) => { r.def += 5; r.atk = Math.max(1, r.atk - 3); } },
+  { name: '탐욕의 인장', desc: '골드 획득 +25%, 대신 물약 회복량 -10%p', apply: (r) => { r.goldMult += 0.25; r.healPenalty = (r.healPenalty || 0) + 0.1; } },
+  { name: '거인의 심장', desc: '최대 HP +25, 대신 치명타 확률 -5%', apply: (r) => { r.maxHp += 25; r.hp += 25; r.critChance = Math.max(0.02, r.critChance - 0.05); } },
+  { name: '민첩의 깃털', desc: '도망 성공 시 이탈 피해 없음, 대신 공격력 -2', apply: (r) => { r.fleeSafe = true; r.atk = Math.max(1, r.atk - 2); } },
+];
+
+/* --- 업적: 조건 충족 시 1회 해금, 보너스 골드 지급 --- */
+const ACHIEVEMENTS = [
+  { id: 'first_clear',  name: '첫 승리',      desc: '던전을 처음으로 클리어한다',       bonus: 50,  check: (s, res) => res.victory },
+  { id: 'no_potion',    name: '무병장수',      desc: '물약을 한 번도 쓰지 않고 클리어한다', bonus: 80,  check: (s, res) => res.victory && !res.usedPotion },
+  { id: 'bestiary_full', name: '박물학자',     desc: '몬스터 도감을 모두 채운다',         bonus: 150, check: (s) => s.bestiary.length >= 11 },
+  { id: 'clear_x3',     name: '베테랑 모험가', desc: '던전을 3회 클리어한다',            bonus: 100, check: (s) => s.clearCount >= 3 },
+  { id: 'rich',         name: '거부',          desc: '누적 골드 1000을 달성한다',        bonus: 100, check: (s) => s.totalGold >= 1000 },
+  { id: 'flawless',     name: '완벽한 승리',   desc: 'HP 절반 이하로 떨어지지 않고 클리어한다', bonus: 120, check: (s, res) => res.victory && !res.wasLowHp },
+];
+
+/* --- 상점에서 구매 가능한 펫: 매 전투 자동으로 약간의 피해를 추가로 준다 --- */
+const PET_POOL = [
+  { key: 'sprite', name: '🧚 꼬마 요정', atk: 2, price: 120 },
+  { key: 'wolfcub', name: '🐺 새끼 늑대', atk: 4, price: 220 },
+  { key: 'hatchling', name: '🐲 아기 드래곤', atk: 7, price: 380 },
 ];
 
 /* ---------------- 2. 저장 데이터 ---------------- */
@@ -132,11 +180,13 @@ function defaultSave() {
     totalGold: 0,
     playCount: 0,
     clearCount: 0,
-    upgrades: { atk: 0, def: 0, hp: 0, gold: 0, luck: 0 },
+    upgrades: { atk: 0, def: 0, hp: 0, gold: 0, luck: 0, firstCrit: 0 },
     inventory: [],
     equipped: { weapon: null, armor: null, ring: null },
     bestiary: [],
-    settings: { sound: true },
+    achievements: [],
+    pet: null,
+    settings: { sound: true, hardcore: false },
   };
 }
 
@@ -153,6 +203,8 @@ function loadSave() {
       equipped: { ...def.equipped, ...(parsed.equipped || {}) },
       inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
       bestiary: Array.isArray(parsed.bestiary) ? parsed.bestiary : [],
+      achievements: Array.isArray(parsed.achievements) ? parsed.achievements : [],
+      pet: parsed.pet || null,
     };
   } catch (e) {
     return defaultSave();
@@ -243,7 +295,7 @@ function playBgm(theme) {
 function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function weightedRoomType() {
-  const table = [['normal', 40], ['strong', 35], ['treasure', 9], ['heal', 8], ['event', 8]];
+  const table = [['normal', 36], ['strong', 32], ['treasure', 8], ['heal', 7], ['event', 9], ['ambush', 8]];
   let r = Math.random() * 100;
   for (const [type, w] of table) { if (r < w) return type; r -= w; }
   return 'normal';
@@ -259,11 +311,12 @@ function weightedGrade() {
 
 function baseStats() {
   const u = save.upgrades;
+  const bestiaryBonus = save.bestiary.length >= 11 ? 0.05 : 0;
   return {
     maxHp: 50 + u.hp * 10,
     atk: 5 + u.atk * 2,
     def: 2 + u.def * 1,
-    goldMult: 1 + u.gold * 0.1,
+    goldMult: 1 + u.gold * 0.1 + bestiaryBonus,
     critChance: 0.10 + u.luck * 0.01,
   };
 }
@@ -298,6 +351,13 @@ function newRun() {
     room: 1,
     kills: 0,
     potions: 1,
+    usedPotion: false,
+    wasLowHp: false,
+    cursedNoHeal: false,
+    healPenalty: 0,
+    fleeSafe: false,
+    combo: 0,
+    relics: [],
     itemsGained: [],
     roomTypes: buildRoomSequence(),
     combat: null, // { enemy, enemyHp, enemyHpMax, isBoss, poisonTurns, guardActive }
@@ -308,6 +368,8 @@ function newRun() {
 function buildRoomSequence() {
   const seq = [];
   for (let i = 1; i <= 9; i++) seq.push(weightedRoomType());
+  seq[3] = 'relic'; // 방 4: 유물 선택
+  seq[6] = 'relic'; // 방 7: 유물 선택
   seq.push('boss');
   return seq;
 }
@@ -332,6 +394,15 @@ function startRun(resumed) {
   enterRoom();
 }
 
+function makeCombat(enemy, isBoss, fleeLeft) {
+  const golden = !isBoss && Math.random() < 0.05;
+  return {
+    enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss,
+    poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false,
+    guardActive: false, fleeLeft, golden, queue: [],
+  };
+}
+
 function enterRoom() {
   document.getElementById('event-panel').classList.add('hidden');
   document.getElementById('event-panel').innerHTML = '';
@@ -343,7 +414,7 @@ function enterRoom() {
 
   if (type === 'boss') {
     const boss = { ...pick(BOSSES) };
-    run.combat = { enemy: boss, enemyHp: boss.hp, enemyHpMax: boss.hp, isBoss: true, poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false, guardActive: false, fleeLeft: 0 };
+    run.combat = makeCombat(boss, true, 0);
     sfx.boss();
     playBgm('boss');
     flashScreen('boss', 600);
@@ -352,10 +423,24 @@ function enterRoom() {
   } else if (type === 'normal' || type === 'strong') {
     const pool = ENEMIES.filter(e => e.tier === type);
     const enemy = { ...pick(pool) };
-    run.combat = { enemy, enemyHp: enemy.hp, enemyHpMax: enemy.hp, isBoss: false, poisonTurns: 0, burnTurns: 0, frozenNext: false, stunNext: false, guardActive: false, fleeLeft: 2 };
+    run.combat = makeCombat(enemy, false, 2);
     playBgm('battle');
     renderCombat(false);
-    setLog(`${enemy.name}이(가) 나타났습니다!`);
+    setLog(run.combat.golden ? `✨ 황금빛 ${enemy.name}이(가) 나타났습니다! 골드 3배!` : `${enemy.name}이(가) 나타났습니다!`);
+  } else if (type === 'ambush') {
+    const pool = ENEMIES.filter(e => e.tier === 'normal');
+    const first = { ...pick(pool) };
+    const second = { ...pick(pool) };
+    run.combat = makeCombat(first, false, 2);
+    run.combat.queue = [second];
+    playBgm('battle');
+    renderCombat(false);
+    setLog(`매복이다! ${first.name}과(와) ${second.name}이(가) 동시에 나타났습니다!`);
+  } else if (type === 'relic') {
+    run.combat = null;
+    playBgm('dungeon');
+    renderNonCombat('🔮', '고대의 제단', '유물 하나를 선택할 수 있습니다.');
+    resolveRelic();
   } else if (type === 'treasure') {
     run.combat = null;
     playBgm('dungeon');
@@ -379,14 +464,15 @@ function renderCombat(isBoss) {
   const c = run.combat;
   const art = CHAR_ART[c.enemy.key];
   document.getElementById('enemy-emoji').innerHTML = art || c.enemy.emoji;
-  document.getElementById('enemy-emoji').className = 'enemy-emoji' + (isBoss ? ' boss-enter' : '');
-  document.getElementById('enemy-name').textContent = c.enemy.name;
+  document.getElementById('enemy-emoji').className = 'enemy-emoji' + (isBoss ? ' boss-enter' : '') + (c.golden ? ' golden' : '');
+  document.getElementById('enemy-name').textContent = c.enemy.name + (c.golden ? ' ✨' : '');
   document.getElementById('enemy-hp').textContent = c.enemyHp;
   document.getElementById('enemy-hp-max').textContent = c.enemyHpMax;
   document.getElementById('enemy-hp-fill').style.width = '100%';
   document.getElementById('room-badge').classList.remove('hidden');
   updatePotionButton();
   updateFleeButton();
+  updateComboUI();
 }
 
 function updateFleeButton() {
@@ -395,6 +481,18 @@ function updateFleeButton() {
   const c = run.combat;
   btn.disabled = c.isBoss || c.fleeLeft <= 0;
   btn.textContent = c.isBoss ? '🏃 도망 불가' : `🏃 도망(${c.fleeLeft})`;
+}
+
+const COMBO_MAX = 5;
+function updateComboUI() {
+  const btn = document.getElementById('btn-ultimate');
+  if (!btn || !run) return;
+  const inCombat = !!run.combat;
+  btn.classList.toggle('hidden', !inCombat);
+  if (!inCombat) return;
+  const ready = run.combo >= COMBO_MAX;
+  btn.disabled = !ready;
+  btn.textContent = ready ? '💥 필살기 발동!' : `💥 필살기(${run.combo}/${COMBO_MAX})`;
 }
 
 function renderNonCombat(emoji, name, msg) {
@@ -415,6 +513,7 @@ function updateHud() {
   document.getElementById('hud-def').textContent = run.def;
   document.getElementById('hud-gold').textContent = run.gold;
   document.getElementById('hud-room').textContent = run.room;
+  if (run.hp / run.maxHp <= 0.5) run.wasLowHp = true;
   updateLowHpVignette();
 }
 
@@ -541,7 +640,9 @@ function playerAttack() {
   }
 
   sfx.attack();
-  const isCrit = Math.random() < run.critChance;
+  const guaranteedCrit = save.upgrades.firstCrit >= 1 && !c.firstAttackDone;
+  c.firstAttackDone = true;
+  const isCrit = guaranteedCrit || Math.random() < run.critChance;
   let dmg = Math.max(1, run.atk + rand(-2, 3) - c.enemy.def);
   if (isCrit) dmg = Math.round(dmg * 1.8);
   let frozeMsg = '';
@@ -559,14 +660,46 @@ function playerAttack() {
     c.enemyHp = Math.max(0, c.enemyHp - dmg);
     setLog(`${c.enemy.name}이(가) 방어했습니다! ${dmg} 데미지`);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
+    run.combo = Math.min(COMBO_MAX, run.combo + 1);
   } else {
     c.enemyHp = Math.max(0, c.enemyHp - dmg);
     hitEnemyAnim(); showDamageFloat('-' + dmg, isCrit ? 'crit' : '');
-    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`${frozeMsg}치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
+    if (isCrit) { sfx.crit(); flashScreen('crit', 350); setLog(`${guaranteedCrit ? '선제 필살! ' : ''}${frozeMsg}치명타! ${c.enemy.name}에게 ${dmg} 데미지!`); }
     else setLog(`${frozeMsg}${c.enemy.name}에게 ${dmg} 데미지!`);
+    run.combo = Math.min(COMBO_MAX, run.combo + 1);
   }
+  applyPetDamage();
   updateEnemyHpBar();
+  updateComboUI();
 
+  if (c.enemyHp <= 0) { onEnemyDefeated(); return; }
+  setTimeout(enemyTurn, 500);
+}
+
+function applyPetDamage() {
+  if (!save.pet || !run || !run.combat || run.combat.enemyHp <= 0) return;
+  const c = run.combat;
+  const dmg = save.pet.atk;
+  c.enemyHp = Math.max(0, c.enemyHp - dmg);
+  showDamageFloat('-' + dmg, 'pet');
+}
+
+function playerUltimate() {
+  if (!run || !run.combat || run.combo < COMBO_MAX) return;
+  const c = run.combat;
+  setActionsLocked(true);
+  sfx.crit();
+  flashScreen('crit', 400);
+  const dmg = Math.max(1, Math.round((run.atk * 3 + rand(0, 6)) - c.enemy.def * 0.5));
+  c.enemyHp = Math.max(0, c.enemyHp - dmg);
+  c.guardActive = false;
+  run.combo = 0;
+  hitEnemyAnim(); shakeScreen();
+  showDamageFloat('-' + dmg, 'crit');
+  setLog(`💥 필살기 작렬! ${c.enemy.name}에게 ${dmg}의 폭발적인 피해!`);
+  applyPetDamage();
+  updateEnemyHpBar();
+  updateComboUI();
   if (c.enemyHp <= 0) { onEnemyDefeated(); return; }
   setTimeout(enemyTurn, 500);
 }
@@ -640,6 +773,7 @@ function setLogSuffix(msg) { return msg; }
 
 function playerHeal() {
   if (!run || !run.combat || run.potions <= 0) return;
+  if (run.cursedNoHeal) { setLog('저주 때문에 회복할 수 없습니다!'); return; }
   setActionsLocked(true);
   if (run.combat.stunNext) {
     run.combat.stunNext = false;
@@ -649,7 +783,8 @@ function playerHeal() {
   }
   sfx.button();
   run.potions -= 1;
-  const heal = Math.round(run.maxHp * 0.25);
+  run.usedPotion = true;
+  const heal = Math.round(run.maxHp * Math.max(0.05, 0.25 - (run.healPenalty || 0)));
   const before = run.hp;
   run.hp = Math.min(run.maxHp, run.hp + heal);
   showDamageFloat('+' + (run.hp - before), 'heal-float');
@@ -673,12 +808,13 @@ function playerFlee() {
   c.fleeLeft -= 1;
   const success = Math.random() < 0.6;
   if (success) {
-    const parting = Math.max(1, Math.round(c.enemy.atk * 0.35) - Math.round(run.def * 0.3));
+    const parting = run.fleeSafe ? 0 : Math.max(1, Math.round(c.enemy.atk * 0.35) - Math.round(run.def * 0.3));
     run.hp = Math.max(0, run.hp - parting);
-    showDamageFloat('-' + parting, '');
-    setLog(`도망에 성공했지만 등을 스쳐 ${parting}의 피해를 입었습니다.`);
+    if (parting > 0) showDamageFloat('-' + parting, '');
+    setLog(parting > 0 ? `도망에 성공했지만 등을 스쳐 ${parting}의 피해를 입었습니다.` : '깃털처럼 가볍게 도망에 성공했습니다!');
     updateHud();
     run.combat = null;
+    updateComboUI();
     saveRun();
     if (run.hp <= 0) { onPlayerDefeated(); return; }
     setTimeout(showNextRoomButton, 500);
@@ -691,17 +827,33 @@ function playerFlee() {
 
 function onEnemyDefeated() {
   const c = run.combat;
-  const goldGain = Math.round(c.enemy.gold * run.goldMult);
+  const goldGain = Math.round(c.enemy.gold * run.goldMult * (c.golden ? 3 : 1));
   run.gold += goldGain;
   run.kills += 1;
   if (!save.bestiary.includes(c.enemy.key)) { save.bestiary.push(c.enemy.key); saveGame(); }
   sfx.gold();
-  spawnSparkles('💰', 6);
+  spawnSparkles('💰', c.golden ? 12 : 6);
   flashScreen('gain', 400);
   setLog(`${c.enemy.name}을(를) 처치! 골드 +${goldGain} 💰`);
   document.getElementById('enemy-hp-fill').style.width = '0%';
+
+  if (c.queue && c.queue.length) {
+    const next = c.queue.shift();
+    const nextCombat = makeCombat(next, false, c.fleeLeft);
+    nextCombat.queue = c.queue;
+    run.combat = nextCombat;
+    updateHud();
+    setTimeout(() => {
+      renderCombat(false);
+      setLog(`이어서 ${next.name}이(가) 달려듭니다!`);
+      restoreActionBar();
+    }, 700);
+    return;
+  }
+
   run.combat = null;
   updateHud();
+  updateComboUI();
 
   if (c.isBoss) { setTimeout(() => finishRun(true), 700); return; }
   setTimeout(showNextRoomButton, 700);
@@ -760,13 +912,17 @@ function applyEquipToRun() {
 
 function resolveHeal() {
   setTimeout(() => {
-    const before = run.hp;
-    run.hp = run.maxHp;
     const bonusGold = Math.round(5 * run.goldMult);
     run.gold += bonusGold;
     flashScreen('heal', 400);
     spawnSparkles('✨', 6);
-    setLog(`HP를 모두 회복했습니다! (+${run.hp - before}) 골드 +${bonusGold}`);
+    if (run.cursedNoHeal) {
+      setLog(`저주 때문에 회복하지 못했습니다. 대신 골드 +${bonusGold}`);
+    } else {
+      const before = run.hp;
+      run.hp = run.maxHp;
+      setLog(`HP를 모두 회복했습니다! (+${run.hp - before}) 골드 +${bonusGold}`);
+    }
     updateHud();
     showNextRoomButton();
   }, 500);
@@ -788,6 +944,30 @@ function resolveEvent() {
       panel.classList.add('hidden');
       panel.innerHTML = '';
       updateHud(); updatePotionButton();
+      showNextRoomButton();
+    });
+    panel.appendChild(btn);
+  });
+  document.getElementById('action-bar').classList.add('hidden');
+}
+
+function resolveRelic() {
+  const pool = [...RELICS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const panel = document.getElementById('event-panel');
+  panel.classList.remove('hidden');
+  panel.innerHTML = '<p>이번 던전에만 적용되는 유물을 하나 선택하세요.</p>';
+  pool.forEach((relic) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary';
+    btn.innerHTML = `<b>${relic.name}</b><br><span style="font-size:11px;color:var(--text-dim)">${relic.desc}</span>`;
+    btn.addEventListener('click', () => {
+      sfx.gold();
+      relic.apply(run);
+      run.relics.push(relic.name);
+      setLog(`유물 [${relic.name}] 획득!`);
+      panel.classList.add('hidden');
+      panel.innerHTML = '';
+      updateHud();
       showNextRoomButton();
     });
     panel.appendChild(btn);
@@ -833,6 +1013,7 @@ function finishRun(victory) {
   saveGame();
 
   const itemNames = run.itemsGained.length ? run.itemsGained.map(i => `${i.name}(${i.grade})`).join(', ') : '없음';
+  const newlyUnlocked = checkAchievements({ victory, usedPotion: run.usedPotion, wasLowHp: run.wasLowHp });
 
   if (victory) {
     stopBgm();
@@ -844,17 +1025,40 @@ function finishRun(victory) {
     document.getElementById('clear-gold').textContent = goldEarned + bonus;
     document.getElementById('clear-items').textContent = itemNames;
     document.getElementById('clear-kills').textContent = run.kills;
+    document.getElementById('clear-achievements').textContent = newlyUnlocked.length ? newlyUnlocked.join(', ') : '없음';
     showScreen('screen-clear');
     spawnConfetti();
   } else {
+    const hardcore = save.settings.hardcore;
+    if (hardcore) {
+      const kept = { settings: save.settings };
+      save = { ...defaultSave(), ...kept };
+      saveGame();
+    }
     document.getElementById('over-room').textContent = run.room;
     document.getElementById('over-kills').textContent = run.kills;
-    document.getElementById('over-gold').textContent = goldEarned;
+    document.getElementById('over-gold').textContent = hardcore ? 0 : goldEarned;
     document.getElementById('over-items').textContent = itemNames;
+    document.getElementById('over-hardcore').textContent = hardcore ? '💀 하드코어 모드: 모든 기록이 초기화되었습니다.' : '';
+    document.getElementById('over-hardcore').classList.toggle('hidden', !hardcore);
     showScreen('screen-gameover');
     spawnCrack();
   }
   run = null;
+}
+
+function checkAchievements(result) {
+  const unlocked = [];
+  ACHIEVEMENTS.forEach((a) => {
+    if (save.achievements.includes(a.id)) return;
+    if (a.check(save, result)) {
+      save.achievements.push(a.id);
+      save.totalGold += a.bonus;
+      unlocked.push(`${a.name} (+${a.bonus}💰)`);
+    }
+  });
+  if (unlocked.length) saveGame();
+  return unlocked;
 }
 
 /* ---------------- 12. 업그레이드 화면 ---------------- */
@@ -865,6 +1069,7 @@ function renderUpgradeScreen() {
   list.innerHTML = '';
   UPGRADE_DEFS.forEach((def) => {
     const level = save.upgrades[def.key];
+    const maxed = def.maxLevel && level >= def.maxLevel;
     const cost = upgradeCost(def.key, level);
     const pipCount = Math.min(level, 10);
     const pips = Array.from({ length: 10 }, (_, i) => {
@@ -879,14 +1084,16 @@ function renderUpgradeScreen() {
         <div class="upgrade-level">Lv.${level} · ${def.desc}</div>
         <div class="upgrade-pips">${pips}</div>
       </div>
-      <button class="btn upgrade-buy" ${save.totalGold < cost ? 'disabled' : ''}>${cost} 💰</button>`;
+      <button class="btn upgrade-buy" ${maxed || save.totalGold < cost ? 'disabled' : ''}>${maxed ? 'MAX' : cost + ' 💰'}</button>`;
     row.querySelector('button').addEventListener('click', () => buyUpgrade(def.key));
     list.appendChild(row);
   });
 }
 
 function buyUpgrade(key) {
+  const def = UPGRADE_DEFS.find(u => u.key === key);
   const level = save.upgrades[key];
+  if (def.maxLevel && level >= def.maxLevel) return;
   const cost = upgradeCost(key, level);
   if (save.totalGold < cost) return;
   sfx.gold();
@@ -972,27 +1179,54 @@ function renderShop() {
     p.className = 'inventory-empty';
     p.textContent = '오늘의 물건을 모두 구매했습니다. 다음에 다시 들러주세요!';
     list.appendChild(p);
-    return;
+  } else {
+    shopOffers.forEach((offer, idx) => {
+      if (!offer) return;
+      const row = document.createElement('div');
+      row.className = 'upgrade-item';
+      row.style.borderColor = GRADE_COLORS[offer.item.grade];
+      row.innerHTML = `
+        <div class="upgrade-info">
+          <div class="upgrade-name">${offer.item.name} <span class="grade-tag" style="color:${GRADE_COLORS[offer.item.grade]}">${offer.item.grade}</span></div>
+          <div class="upgrade-level">${itemStatsText(offer.item)}</div>
+        </div>
+        <button class="btn upgrade-buy" ${save.totalGold < offer.price ? 'disabled' : ''}>${offer.price} 💰</button>`;
+      row.querySelector('button').addEventListener('click', () => {
+        if (save.totalGold < offer.price) return;
+        sfx.gold();
+        save.totalGold -= offer.price;
+        save.inventory.push(offer.item);
+        shopOffers[idx] = null;
+        saveGame();
+        renderShop();
+      });
+      list.appendChild(row);
+    });
   }
-  shopOffers.forEach((offer, idx) => {
-    if (!offer) return;
+  renderPetShop();
+}
+
+function renderPetShop() {
+  const list = document.getElementById('shop-pet-list');
+  list.innerHTML = '';
+  PET_POOL.forEach((pet) => {
+    const owned = save.pet && save.pet.key === pet.key;
     const row = document.createElement('div');
-    row.className = 'upgrade-item';
-    row.style.borderColor = GRADE_COLORS[offer.item.grade];
+    row.className = 'upgrade-item' + (owned ? ' equipped' : '');
     row.innerHTML = `
       <div class="upgrade-info">
-        <div class="upgrade-name">${offer.item.name} <span class="grade-tag" style="color:${GRADE_COLORS[offer.item.grade]}">${offer.item.grade}</span></div>
-        <div class="upgrade-level">${itemStatsText(offer.item)}</div>
+        <div class="upgrade-name">${pet.name}</div>
+        <div class="upgrade-level">전투마다 자동으로 ${pet.atk} 피해 추가</div>
       </div>
-      <button class="btn upgrade-buy" ${save.totalGold < offer.price ? 'disabled' : ''}>${offer.price} 💰</button>`;
+      <button class="btn upgrade-buy" ${owned || save.totalGold < pet.price ? 'disabled' : ''}>${owned ? '보유중' : pet.price + ' 💰'}</button>`;
     row.querySelector('button').addEventListener('click', () => {
-      if (save.totalGold < offer.price) return;
+      if (owned || save.totalGold < pet.price) return;
       sfx.gold();
-      save.totalGold -= offer.price;
-      save.inventory.push(offer.item);
-      shopOffers[idx] = null;
+      save.totalGold -= pet.price;
+      save.pet = { key: pet.key, name: pet.name, atk: pet.atk };
       saveGame();
-      renderShop();
+      renderPetShop();
+      document.getElementById('shop-gold').textContent = save.totalGold;
     });
     list.appendChild(row);
   });
@@ -1017,6 +1251,26 @@ function renderBestiary() {
   });
 }
 
+/* ---------------- 12-4. 업적 화면 ---------------- */
+
+function renderAchievements() {
+  const done = ACHIEVEMENTS.filter((a) => save.achievements.includes(a.id)).length;
+  document.getElementById('achievements-progress').textContent = `${done} / ${ACHIEVEMENTS.length} 달성`;
+  const list = document.getElementById('achievements-list');
+  list.innerHTML = '';
+  ACHIEVEMENTS.forEach((a) => {
+    const unlocked = save.achievements.includes(a.id);
+    const row = document.createElement('div');
+    row.className = 'upgrade-item' + (unlocked ? ' equipped' : '');
+    row.innerHTML = `
+      <div class="upgrade-info">
+        <div class="upgrade-name">${unlocked ? '🏅' : '🔒'} ${a.name}</div>
+        <div class="upgrade-level">${a.desc} · 보상 ${a.bonus}💰</div>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
 /* ---------------- 13. 타이틀 화면 갱신 ---------------- */
 
 function renderTitleStats() {
@@ -1026,6 +1280,9 @@ function renderTitleStats() {
   document.getElementById('stat-total-gold').textContent = save.totalGold;
   document.getElementById('stat-play-count').textContent = save.playCount;
   document.getElementById('btn-sound-toggle').textContent = save.settings.sound ? '🔊' : '🔇';
+  const hcBtn = document.getElementById('btn-hardcore-toggle');
+  hcBtn.textContent = `☠️ 하드코어 모드: ${save.settings.hardcore ? 'ON' : 'OFF'}`;
+  hcBtn.classList.toggle('active', save.settings.hardcore);
 }
 
 /* ---------------- 14. 초기화 & 이벤트 바인딩 ---------------- */
@@ -1033,6 +1290,7 @@ function renderTitleStats() {
 function init() {
   renderTitleStats();
 
+  document.getElementById('btn-ultimate').addEventListener('click', playerUltimate);
   document.getElementById('btn-enter-dungeon').addEventListener('click', () => { sfx.button(); startRun(false); });
   document.getElementById('btn-open-upgrade').addEventListener('click', () => { sfx.button(); stopBgm(); renderUpgradeScreen(); showScreen('screen-upgrade'); });
   document.getElementById('btn-upgrade-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
@@ -1049,6 +1307,16 @@ function init() {
 
   document.getElementById('btn-open-bestiary').addEventListener('click', () => { sfx.button(); stopBgm(); renderBestiary(); showScreen('screen-bestiary'); });
   document.getElementById('btn-bestiary-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+
+  document.getElementById('btn-open-achievements').addEventListener('click', () => { sfx.button(); stopBgm(); renderAchievements(); showScreen('screen-achievements'); });
+  document.getElementById('btn-achievements-back').addEventListener('click', () => { sfx.button(); renderTitleStats(); showScreen('screen-title'); playBgm('title'); });
+
+  document.getElementById('btn-hardcore-toggle').addEventListener('click', () => {
+    sfx.button();
+    save.settings.hardcore = !save.settings.hardcore;
+    saveGame();
+    renderTitleStats();
+  });
 
   document.getElementById('btn-sound-toggle').addEventListener('click', () => {
     save.settings.sound = !save.settings.sound;
