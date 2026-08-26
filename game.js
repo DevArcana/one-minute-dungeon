@@ -181,6 +181,21 @@ const PET_POOL = [
   { key: 'wolfcub', name: '🐺 새끼 늑대', atk: 4, price: 220 },
   { key: 'hatchling', name: '🐲 아기 드래곤', atk: 7, price: 380 },
 ];
+const PET_MAX_LEVEL = 10;
+const PET_ATK_PER_LEVEL = 2;
+
+function petBaseAtk(key) {
+  const def = PET_POOL.find((p) => p.key === key);
+  return def ? def.atk : 0;
+}
+function petEffectiveAtk(pet) {
+  if (!pet) return 0;
+  const level = pet.level || 1;
+  return petBaseAtk(pet.key) + (level - 1) * PET_ATK_PER_LEVEL;
+}
+function petUpgradeCost(level) {
+  return Math.round(60 * Math.pow(1.35, level - 1));
+}
 
 /* ---------------- 2. 저장 데이터 ---------------- */
 
@@ -758,7 +773,7 @@ function playerAttack() {
 function applyPetDamage() {
   if (!save.pet || !run || !run.combat || run.combat.enemyHp <= 0) return;
   const c = run.combat;
-  const dmg = save.pet.atk;
+  const dmg = petEffectiveAtk(save.pet);
   c.enemyHp = Math.max(0, c.enemyHp - dmg);
   showDamageFloat('-' + dmg, 'pet');
 }
@@ -1362,21 +1377,43 @@ function renderPetShop() {
     const owned = save.pet && save.pet.key === pet.key;
     const row = document.createElement('div');
     row.className = 'upgrade-item' + (owned ? ' equipped' : '');
-    row.innerHTML = `
-      <div class="upgrade-info">
-        <div class="upgrade-name">${pet.name}</div>
-        <div class="upgrade-level">전투마다 자동으로 ${pet.atk} 피해 추가</div>
-      </div>
-      <button class="btn upgrade-buy" ${owned || save.totalGold < pet.price ? 'disabled' : ''}>${owned ? '보유중' : pet.price + ' 💰'}</button>`;
-    row.querySelector('button').addEventListener('click', () => {
-      if (owned || save.totalGold < pet.price) return;
-      sfx.gold();
-      save.totalGold -= pet.price;
-      save.pet = { key: pet.key, name: pet.name, atk: pet.atk };
-      saveGame();
-      renderPetShop();
-      document.getElementById('shop-gold').textContent = save.totalGold;
-    });
+
+    if (owned) {
+      const level = save.pet.level || 1;
+      const maxed = level >= PET_MAX_LEVEL;
+      const cost = petUpgradeCost(level);
+      row.innerHTML = `
+        <div class="upgrade-info">
+          <div class="upgrade-name">${pet.name} <span class="grade-tag" style="color:var(--gold-bright)">Lv.${level}</span></div>
+          <div class="upgrade-level">전투마다 자동으로 ${petEffectiveAtk(save.pet)} 피해 추가</div>
+        </div>
+        <button class="btn upgrade-buy" ${maxed || save.totalGold < cost ? 'disabled' : ''}>${maxed ? 'MAX' : `강화 ${cost} 💰`}</button>`;
+      row.querySelector('button').addEventListener('click', () => {
+        if (maxed || save.totalGold < cost) return;
+        sfx.gold();
+        save.totalGold -= cost;
+        save.pet.level = level + 1;
+        saveGame();
+        renderPetShop();
+        document.getElementById('shop-gold').textContent = save.totalGold;
+      });
+    } else {
+      row.innerHTML = `
+        <div class="upgrade-info">
+          <div class="upgrade-name">${pet.name}</div>
+          <div class="upgrade-level">전투마다 자동으로 ${pet.atk} 피해 추가</div>
+        </div>
+        <button class="btn upgrade-buy" ${save.totalGold < pet.price ? 'disabled' : ''}>${pet.price} 💰</button>`;
+      row.querySelector('button').addEventListener('click', () => {
+        if (save.totalGold < pet.price) return;
+        sfx.gold();
+        save.totalGold -= pet.price;
+        save.pet = { key: pet.key, name: pet.name, level: 1 };
+        saveGame();
+        renderPetShop();
+        document.getElementById('shop-gold').textContent = save.totalGold;
+      });
+    }
     list.appendChild(row);
   });
 }
