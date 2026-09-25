@@ -1,0 +1,2584 @@
+{
+  "balance": {
+    "warrior": {
+      "name": "전사",
+      "title": "서약의 수호자",
+      "role": "방어 · 반격",
+      "desc": "방어하면 다음 공격이 강화됩니다. 강공격을 막고 반격하세요.",
+      "hp": 110,
+      "atk": 13,
+      "def": 3,
+      "crit": 0.08,
+      "maxEnergy": 4,
+      "skill": "방패 강타",
+      "skillDesc": "공격력 180% 피해 + 이번 턴 피해 40% 감소",
+      "cost": 2,
+      "skillMultiplier": 1.8,
+      "skillReduction": 0.4
+    },
+    "rogue": {
+      "name": "도적",
+      "title": "그림자의 방랑자",
+      "role": "독 · 치명타",
+      "desc": "독을 쌓고 치명타를 노리세요. 방어는 피해를 줄이고 다음 타격을 강화합니다.",
+      "hp": 98,
+      "atk": 14,
+      "def": 2,
+      "crit": 0.25,
+      "maxEnergy": 4,
+      "skill": "맹독 쌍검",
+      "skillDesc": "공격력 170% 피해 + 독 3턴",
+      "cost": 2,
+      "skillMultiplier": 1.7
+    },
+    "mage": {
+      "name": "마법사",
+      "title": "별빛의 기록자",
+      "role": "마나 · 화상",
+      "desc": "화염을 남기고 다시 점화하세요. 방어하면 마나를 2 회복합니다.",
+      "hp": 90,
+      "atk": 12,
+      "def": 2,
+      "crit": 0.1,
+      "maxEnergy": 6,
+      "skill": "별불꽃",
+      "skillDesc": "공격력 210% 피해 + 화상 3턴. 이미 화상인 적에게 추가 피해",
+      "cost": 3,
+      "skillMultiplier": 2.1
+    }
+  },
+  "samples": 200,
+  "seedStart": 1,
+  "gear": true,
+  "route": "elite",
+  "totalRuns": 24000,
+  "profiles": [
+    {
+      "id": "new",
+      "name": "초기",
+      "levels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "gear": [],
+      "upgradeGold": 0,
+      "upgrades": {
+        "atk": 0,
+        "hp": 0,
+        "def": 0,
+        "luck": 0,
+        "gold": 0,
+        "firstCrit": 0
+      }
+    },
+    {
+      "id": "early",
+      "name": "초반 성장",
+      "levels": [
+        2,
+        2,
+        1,
+        1,
+        0,
+        0
+      ],
+      "gear": [
+        "iron",
+        "plate"
+      ],
+      "upgradeGold": 430,
+      "upgrades": {
+        "atk": 2,
+        "hp": 2,
+        "def": 1,
+        "luck": 1,
+        "gold": 0,
+        "firstCrit": 0
+      }
+    },
+    {
+      "id": "mid",
+      "name": "중반 성장",
+      "levels": [
+        5,
+        5,
+        3,
+        4,
+        2,
+        1
+      ],
+      "gear": [
+        "fang",
+        "dusk",
+        "seal"
+      ],
+      "upgradeGold": 2810,
+      "upgrades": {
+        "atk": 5,
+        "hp": 5,
+        "def": 3,
+        "luck": 4,
+        "gold": 2,
+        "firstCrit": 1
+      }
+    },
+    {
+      "id": "late",
+      "name": "후반 성장",
+      "levels": [
+        10,
+        10,
+        6,
+        10,
+        5,
+        1
+      ],
+      "gear": [
+        "star",
+        "dusk",
+        "crown"
+      ],
+      "upgradeGold": 19005,
+      "upgrades": {
+        "atk": 10,
+        "hp": 10,
+        "def": 6,
+        "luck": 10,
+        "gold": 5,
+        "firstCrit": 1
+      }
+    },
+    {
+      "id": "max",
+      "name": "최대 성장",
+      "levels": [
+        15,
+        15,
+        8,
+        15,
+        10,
+        1
+      ],
+      "gear": [
+        "star",
+        "dusk",
+        "crown"
+      ],
+      "upgradeGold": 116123,
+      "upgrades": {
+        "atk": 15,
+        "hp": 15,
+        "def": 8,
+        "luck": 15,
+        "gold": 10,
+        "firstCrit": 1
+      }
+    }
+  ],
+  "rows": [
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 22.54,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 6.19,
+      "actions": {
+        "attack": 4107,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 19.85,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 6.27,
+      "actions": {
+        "attack": 3569,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 18.79,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.23,
+      "actions": {
+        "attack": 3357,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 197,
+      "samples": 200,
+      "winRate": 98.5,
+      "avgTurns": 35.92,
+      "winTurns": 35.78,
+      "winHpPercent": 53.2,
+      "avgPotions": 1.74,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1792,
+        "skill": 3217,
+        "guard": 1826,
+        "potion": 348
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 155,
+      "samples": 200,
+      "winRate": 77.5,
+      "avgTurns": 30.35,
+      "winTurns": 29.59,
+      "winHpPercent": 41.52,
+      "avgPotions": 1.92,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1449,
+        "skill": 2706,
+        "guard": 1531,
+        "potion": 384
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 138,
+      "samples": 200,
+      "winRate": 69,
+      "avgTurns": 28.87,
+      "winTurns": 27.62,
+      "winHpPercent": 44.3,
+      "avgPotions": 1.91,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1323,
+        "skill": 2627,
+        "guard": 1442,
+        "potion": 381
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 19.88,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.11,
+      "actions": {
+        "attack": 3575,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 17.37,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.17,
+      "actions": {
+        "attack": 3074,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 16.54,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 4.41,
+      "actions": {
+        "attack": 2907,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 101,
+      "samples": 200,
+      "winRate": 50.5,
+      "avgTurns": 39.95,
+      "winTurns": 38.31,
+      "winHpPercent": 35.56,
+      "avgPotions": 1.97,
+      "deathDepth": 8.99,
+      "actions": {
+        "attack": 2126,
+        "skill": 3401,
+        "guard": 2068,
+        "potion": 394
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 47,
+      "samples": 200,
+      "winRate": 23.5,
+      "avgTurns": 29.71,
+      "winTurns": 30.32,
+      "winHpPercent": 26.5,
+      "avgPotions": 1.99,
+      "deathDepth": 8.82,
+      "actions": {
+        "attack": 1372,
+        "skill": 2667,
+        "guard": 1504,
+        "potion": 398
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 49,
+      "samples": 200,
+      "winRate": 24.5,
+      "avgTurns": 27.94,
+      "winTurns": 28.45,
+      "winHpPercent": 27.8,
+      "avgPotions": 1.99,
+      "deathDepth": 8.75,
+      "actions": {
+        "attack": 1259,
+        "skill": 2504,
+        "guard": 1427,
+        "potion": 398
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 17.9,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 4.53,
+      "actions": {
+        "attack": 3180,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 15.57,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 1.98,
+      "deathDepth": 4.52,
+      "actions": {
+        "attack": 2718,
+        "skill": 0,
+        "guard": 0,
+        "potion": 396
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 14.45,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 1.94,
+      "deathDepth": 3.48,
+      "actions": {
+        "attack": 2501,
+        "skill": 0,
+        "guard": 0,
+        "potion": 388
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 14,
+      "samples": 200,
+      "winRate": 7,
+      "avgTurns": 38.35,
+      "winTurns": 38.29,
+      "winHpPercent": 27.29,
+      "avgPotions": 2,
+      "deathDepth": 8.74,
+      "actions": {
+        "attack": 2091,
+        "skill": 3197,
+        "guard": 1982,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 26.64,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.35,
+      "actions": {
+        "attack": 1193,
+        "skill": 2316,
+        "guard": 1419,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 2,
+      "samples": 200,
+      "winRate": 1,
+      "avgTurns": 25.17,
+      "winTurns": 29,
+      "winHpPercent": 19.03,
+      "avgPotions": 2,
+      "deathDepth": 8.34,
+      "actions": {
+        "attack": 1087,
+        "skill": 2219,
+        "guard": 1327,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 16.39,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 3.69,
+      "actions": {
+        "attack": 2877,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 13.76,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 1.91,
+      "deathDepth": 3.53,
+      "actions": {
+        "attack": 2370,
+        "skill": 0,
+        "guard": 0,
+        "potion": 382
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 12.68,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 2.69,
+      "actions": {
+        "attack": 2136,
+        "skill": 0,
+        "guard": 0,
+        "potion": 399
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 34.47,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.16,
+      "actions": {
+        "attack": 1874,
+        "skill": 2815,
+        "guard": 1805,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.76,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.32,
+      "actions": {
+        "attack": 1176,
+        "skill": 1912,
+        "guard": 1264,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "new",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 21.9,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.06,
+      "actions": {
+        "attack": 981,
+        "skill": 1792,
+        "guard": 1206,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 27.41,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.24,
+      "actions": {
+        "attack": 5081,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.68,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.17,
+      "actions": {
+        "attack": 4335,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.56,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.14,
+      "actions": {
+        "attack": 4311,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 31.96,
+      "winTurns": 31.96,
+      "winHpPercent": 60.78,
+      "avgPotions": 0.98,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1611,
+        "skill": 3027,
+        "guard": 1558,
+        "potion": 195
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 27.75,
+      "winTurns": 27.75,
+      "winHpPercent": 60.05,
+      "avgPotions": 1.4,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1312,
+        "skill": 2573,
+        "guard": 1384,
+        "potion": 280
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 26.72,
+      "winTurns": 26.72,
+      "winHpPercent": 60.24,
+      "avgPotions": 1.43,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1245,
+        "skill": 2440,
+        "guard": 1373,
+        "potion": 286
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.89,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 6.92,
+      "actions": {
+        "attack": 4378,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 20.89,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 6.92,
+      "actions": {
+        "attack": 3778,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 19.72,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.68,
+      "actions": {
+        "attack": 3543,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 37.49,
+      "winTurns": 37.49,
+      "winHpPercent": 50.97,
+      "avgPotions": 1.79,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1914,
+        "skill": 3334,
+        "guard": 1894,
+        "potion": 357
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 157,
+      "samples": 200,
+      "winRate": 78.5,
+      "avgTurns": 31.88,
+      "winTurns": 30.87,
+      "winHpPercent": 41.12,
+      "avgPotions": 1.93,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1562,
+        "skill": 2829,
+        "guard": 1599,
+        "potion": 386
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 170,
+      "samples": 200,
+      "winRate": 85,
+      "avgTurns": 30.06,
+      "winTurns": 29.38,
+      "winHpPercent": 42.95,
+      "avgPotions": 1.88,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1395,
+        "skill": 2727,
+        "guard": 1514,
+        "potion": 375
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 20.4,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.56,
+      "actions": {
+        "attack": 3679,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 18.43,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.74,
+      "actions": {
+        "attack": 3286,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 18.06,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.05,
+      "actions": {
+        "attack": 3213,
+        "skill": 0,
+        "guard": 0,
+        "potion": 399
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 121,
+      "samples": 200,
+      "winRate": 60.5,
+      "avgTurns": 40.49,
+      "winTurns": 39.21,
+      "winHpPercent": 32.74,
+      "avgPotions": 1.97,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 2122,
+        "skill": 3493,
+        "guard": 2091,
+        "potion": 393
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 29,
+      "samples": 200,
+      "winRate": 14.5,
+      "avgTurns": 31.86,
+      "winTurns": 31.76,
+      "winHpPercent": 22.28,
+      "avgPotions": 2,
+      "deathDepth": 8.98,
+      "actions": {
+        "attack": 1500,
+        "skill": 2858,
+        "guard": 1614,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 36,
+      "samples": 200,
+      "winRate": 18,
+      "avgTurns": 30.56,
+      "winTurns": 30.25,
+      "winHpPercent": 25.04,
+      "avgPotions": 2,
+      "deathDepth": 8.97,
+      "actions": {
+        "attack": 1463,
+        "skill": 2714,
+        "guard": 1535,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 19.36,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.01,
+      "actions": {
+        "attack": 3471,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 17.18,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 5.08,
+      "actions": {
+        "attack": 3036,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 16.66,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 1.98,
+      "deathDepth": 4.67,
+      "actions": {
+        "attack": 2936,
+        "skill": 0,
+        "guard": 0,
+        "potion": 396
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 11,
+      "samples": 200,
+      "winRate": 5.5,
+      "avgTurns": 39.6,
+      "winTurns": 41.55,
+      "winHpPercent": 21.68,
+      "avgPotions": 2,
+      "deathDepth": 8.94,
+      "actions": {
+        "attack": 2161,
+        "skill": 3287,
+        "guard": 2073,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 1,
+      "samples": 200,
+      "winRate": 0.5,
+      "avgTurns": 28.75,
+      "winTurns": 29,
+      "winHpPercent": 37.29,
+      "avgPotions": 2,
+      "deathDepth": 8.68,
+      "actions": {
+        "attack": 1315,
+        "skill": 2560,
+        "guard": 1474,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "early",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 27.29,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.7,
+      "actions": {
+        "attack": 1209,
+        "skill": 2470,
+        "guard": 1378,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 135,
+      "samples": 200,
+      "winRate": 67.5,
+      "avgTurns": 29.15,
+      "winTurns": 28.07,
+      "winHpPercent": 37.3,
+      "avgPotions": 1.98,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 5434,
+        "skill": 0,
+        "guard": 0,
+        "potion": 395
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 158,
+      "samples": 200,
+      "winRate": 79,
+      "avgTurns": 26.25,
+      "winTurns": 25.61,
+      "winHpPercent": 39.05,
+      "avgPotions": 2,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 4850,
+        "skill": 0,
+        "guard": 0,
+        "potion": 399
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 50,
+      "samples": 200,
+      "winRate": 25,
+      "avgTurns": 27.76,
+      "winTurns": 26.16,
+      "winHpPercent": 28.14,
+      "avgPotions": 2,
+      "deathDepth": 8.99,
+      "actions": {
+        "attack": 5151,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 20.62,
+      "winTurns": 20.62,
+      "winHpPercent": 74.23,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 995,
+        "skill": 2150,
+        "guard": 978,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.85,
+      "winTurns": 17.85,
+      "winHpPercent": 66.56,
+      "avgPotions": 0.03,
+      "deathDepth": null,
+      "actions": {
+        "attack": 821,
+        "skill": 1986,
+        "guard": 757,
+        "potion": 5
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 16.16,
+      "winTurns": 16.16,
+      "winHpPercent": 69.88,
+      "avgPotions": 0.01,
+      "deathDepth": null,
+      "actions": {
+        "attack": 709,
+        "skill": 1875,
+        "guard": 646,
+        "potion": 1
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 22,
+      "samples": 200,
+      "winRate": 11,
+      "avgTurns": 29.04,
+      "winTurns": 27.36,
+      "winHpPercent": 20.07,
+      "avgPotions": 2,
+      "deathDepth": 8.95,
+      "actions": {
+        "attack": 5408,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 17,
+      "samples": 200,
+      "winRate": 8.5,
+      "avgTurns": 26.21,
+      "winTurns": 24.82,
+      "winHpPercent": 27.77,
+      "avgPotions": 2,
+      "deathDepth": 8.99,
+      "actions": {
+        "attack": 4841,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 1,
+      "samples": 200,
+      "winRate": 0.5,
+      "avgTurns": 25.63,
+      "winTurns": 27,
+      "winHpPercent": 9.85,
+      "avgPotions": 2,
+      "deathDepth": 8.63,
+      "actions": {
+        "attack": 4725,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 23.69,
+      "winTurns": 23.69,
+      "winHpPercent": 62.15,
+      "avgPotions": 0.08,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1187,
+        "skill": 2401,
+        "guard": 1134,
+        "potion": 16
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 21.4,
+      "winTurns": 21.4,
+      "winHpPercent": 63.21,
+      "avgPotions": 0.55,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1001,
+        "skill": 2181,
+        "guard": 988,
+        "potion": 109
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 19.5,
+      "winTurns": 19.5,
+      "winHpPercent": 63.57,
+      "avgPotions": 0.46,
+      "deathDepth": null,
+      "actions": {
+        "attack": 872,
+        "skill": 2005,
+        "guard": 930,
+        "potion": 92
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 26.28,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.49,
+      "actions": {
+        "attack": 4855,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.69,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 8.52,
+      "actions": {
+        "attack": 4337,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 22.8,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.9,
+      "actions": {
+        "attack": 4159,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 27.69,
+      "winTurns": 27.69,
+      "winHpPercent": 63.49,
+      "avgPotions": 0.71,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1435,
+        "skill": 2654,
+        "guard": 1307,
+        "potion": 141
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 24.94,
+      "winTurns": 24.94,
+      "winHpPercent": 60.67,
+      "avgPotions": 1.2,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1206,
+        "skill": 2368,
+        "guard": 1174,
+        "potion": 240
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 22.59,
+      "winTurns": 22.59,
+      "winHpPercent": 62.08,
+      "avgPotions": 1.14,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1050,
+        "skill": 2171,
+        "guard": 1070,
+        "potion": 227
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 23.72,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.77,
+      "actions": {
+        "attack": 4344,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 21.28,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 7.73,
+      "actions": {
+        "attack": 3855,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 0,
+      "samples": 200,
+      "winRate": 0,
+      "avgTurns": 20.01,
+      "winTurns": null,
+      "winHpPercent": null,
+      "avgPotions": 2,
+      "deathDepth": 6.6,
+      "actions": {
+        "attack": 3601,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 33.16,
+      "winTurns": 33.16,
+      "winHpPercent": 58.04,
+      "avgPotions": 1.49,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1615,
+        "skill": 3055,
+        "guard": 1663,
+        "potion": 298
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 193,
+      "samples": 200,
+      "winRate": 96.5,
+      "avgTurns": 29.44,
+      "winTurns": 29.23,
+      "winHpPercent": 42.61,
+      "avgPotions": 1.88,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 1395,
+        "skill": 2584,
+        "guard": 1533,
+        "potion": 376
+      }
+    },
+    {
+      "profile": "mid",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 25.68,
+      "winTurns": 25.68,
+      "winHpPercent": 53.75,
+      "avgPotions": 1.77,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1173,
+        "skill": 2386,
+        "guard": 1224,
+        "potion": 353
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 20.48,
+      "winTurns": 20.48,
+      "winHpPercent": 58.38,
+      "avgPotions": 0.41,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4013,
+        "skill": 0,
+        "guard": 0,
+        "potion": 82
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 18.85,
+      "winTurns": 18.85,
+      "winHpPercent": 59.5,
+      "avgPotions": 0.45,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3679,
+        "skill": 0,
+        "guard": 0,
+        "potion": 90
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 21.36,
+      "winTurns": 21.36,
+      "winHpPercent": 60.99,
+      "avgPotions": 0.91,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4089,
+        "skill": 0,
+        "guard": 0,
+        "potion": 182
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 15.29,
+      "winTurns": 15.29,
+      "winHpPercent": 92.87,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 610,
+        "skill": 1850,
+        "guard": 597,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 14.79,
+      "winTurns": 14.79,
+      "winHpPercent": 86.5,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 591,
+        "skill": 1778,
+        "guard": 588,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 12.26,
+      "winTurns": 12.26,
+      "winHpPercent": 90.85,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 538,
+        "skill": 1488,
+        "guard": 426,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 24.92,
+      "winTurns": 24.92,
+      "winHpPercent": 60.15,
+      "avgPotions": 1.42,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4701,
+        "skill": 0,
+        "guard": 0,
+        "potion": 283
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 22.77,
+      "winTurns": 22.77,
+      "winHpPercent": 60.37,
+      "avgPotions": 1.31,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4292,
+        "skill": 0,
+        "guard": 0,
+        "potion": 261
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 25.79,
+      "winTurns": 25.79,
+      "winHpPercent": 52.56,
+      "avgPotions": 1.84,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4790,
+        "skill": 0,
+        "guard": 0,
+        "potion": 368
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.12,
+      "winTurns": 17.12,
+      "winHpPercent": 85.45,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 761,
+        "skill": 1970,
+        "guard": 693,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 16.26,
+      "winTurns": 16.26,
+      "winHpPercent": 77.71,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 689,
+        "skill": 1902,
+        "guard": 660,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 14.8,
+      "winTurns": 14.8,
+      "winHpPercent": 79.88,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 599,
+        "skill": 1775,
+        "guard": 586,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 183,
+      "samples": 200,
+      "winRate": 91.5,
+      "avgTurns": 27.98,
+      "winTurns": 27.68,
+      "winHpPercent": 38.73,
+      "avgPotions": 1.93,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 5211,
+        "skill": 0,
+        "guard": 0,
+        "potion": 385
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 193,
+      "samples": 200,
+      "winRate": 96.5,
+      "avgTurns": 25.98,
+      "winTurns": 25.8,
+      "winHpPercent": 42.67,
+      "avgPotions": 1.99,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 4799,
+        "skill": 0,
+        "guard": 0,
+        "potion": 397
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 108,
+      "samples": 200,
+      "winRate": 54,
+      "avgTurns": 28.06,
+      "winTurns": 26.85,
+      "winHpPercent": 28.97,
+      "avgPotions": 2,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 5211,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 19.82,
+      "winTurns": 19.82,
+      "winHpPercent": 72.74,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 935,
+        "skill": 2130,
+        "guard": 898,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.92,
+      "winTurns": 17.92,
+      "winHpPercent": 64.21,
+      "avgPotions": 0.02,
+      "deathDepth": null,
+      "actions": {
+        "attack": 816,
+        "skill": 2016,
+        "guard": 749,
+        "potion": 3
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 16.17,
+      "winTurns": 16.17,
+      "winHpPercent": 69.5,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 717,
+        "skill": 1881,
+        "guard": 636,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 41,
+      "samples": 200,
+      "winRate": 20.5,
+      "avgTurns": 28.74,
+      "winTurns": 27.37,
+      "winHpPercent": 23.49,
+      "avgPotions": 2,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 5347,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 56,
+      "samples": 200,
+      "winRate": 28,
+      "avgTurns": 26.58,
+      "winTurns": 25.38,
+      "winHpPercent": 23.88,
+      "avgPotions": 2,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 4915,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 7,
+      "samples": 200,
+      "winRate": 3.5,
+      "avgTurns": 27.11,
+      "winTurns": 25.86,
+      "winHpPercent": 14.93,
+      "avgPotions": 2,
+      "deathDepth": 8.98,
+      "actions": {
+        "attack": 5022,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 22.35,
+      "winTurns": 22.35,
+      "winHpPercent": 60.47,
+      "avgPotions": 0.03,
+      "deathDepth": null,
+      "actions": {
+        "attack": 1095,
+        "skill": 2284,
+        "guard": 1086,
+        "potion": 5
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 21.09,
+      "winTurns": 21.09,
+      "winHpPercent": 62.28,
+      "avgPotions": 0.51,
+      "deathDepth": null,
+      "actions": {
+        "attack": 986,
+        "skill": 2152,
+        "guard": 979,
+        "potion": 101
+      }
+    },
+    {
+      "profile": "late",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 18.79,
+      "winTurns": 18.79,
+      "winHpPercent": 61.61,
+      "avgPotions": 0.34,
+      "deathDepth": null,
+      "actions": {
+        "attack": 827,
+        "skill": 1996,
+        "guard": 868,
+        "potion": 67
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 16.93,
+      "winTurns": 16.93,
+      "winHpPercent": 67.51,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3385,
+        "skill": 0,
+        "guard": 0,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 15.45,
+      "winTurns": 15.45,
+      "winHpPercent": 65.65,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3089,
+        "skill": 0,
+        "guard": 0,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.56,
+      "winTurns": 17.56,
+      "winHpPercent": 59.51,
+      "avgPotions": 0.01,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3511,
+        "skill": 0,
+        "guard": 0,
+        "potion": 1
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 12.78,
+      "winTurns": 12.78,
+      "winHpPercent": 96.88,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 563,
+        "skill": 1551,
+        "guard": 442,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 12.34,
+      "winTurns": 12.34,
+      "winHpPercent": 94.29,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 544,
+        "skill": 1492,
+        "guard": 432,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 0,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 10.93,
+      "winTurns": 10.93,
+      "winHpPercent": 96.81,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 471,
+        "skill": 1429,
+        "guard": 286,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 19.81,
+      "winTurns": 19.81,
+      "winHpPercent": 56.59,
+      "avgPotions": 0.25,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3912,
+        "skill": 0,
+        "guard": 0,
+        "potion": 49
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 18.16,
+      "winTurns": 18.16,
+      "winHpPercent": 58.6,
+      "avgPotions": 0.26,
+      "deathDepth": null,
+      "actions": {
+        "attack": 3580,
+        "skill": 0,
+        "guard": 0,
+        "potion": 51
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 20.73,
+      "winTurns": 20.73,
+      "winHpPercent": 59.27,
+      "avgPotions": 0.72,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4002,
+        "skill": 0,
+        "guard": 0,
+        "potion": 143
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 15.07,
+      "winTurns": 15.07,
+      "winHpPercent": 92.31,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 616,
+        "skill": 1810,
+        "guard": 588,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 14.85,
+      "winTurns": 14.85,
+      "winHpPercent": 86.21,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 592,
+        "skill": 1790,
+        "guard": 588,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 1,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 12.49,
+      "winTurns": 12.49,
+      "winHpPercent": 89.95,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 545,
+        "skill": 1526,
+        "guard": 426,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 23.87,
+      "winTurns": 23.87,
+      "winHpPercent": 58.18,
+      "avgPotions": 1.17,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4540,
+        "skill": 0,
+        "guard": 0,
+        "potion": 233
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 21.75,
+      "winTurns": 21.75,
+      "winHpPercent": 59.53,
+      "avgPotions": 1.08,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4134,
+        "skill": 0,
+        "guard": 0,
+        "potion": 216
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 24.73,
+      "winTurns": 24.73,
+      "winHpPercent": 58.29,
+      "avgPotions": 1.6,
+      "deathDepth": null,
+      "actions": {
+        "attack": 4626,
+        "skill": 0,
+        "guard": 0,
+        "potion": 319
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.01,
+      "winTurns": 17.01,
+      "winHpPercent": 85.24,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 764,
+        "skill": 1957,
+        "guard": 680,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 15.94,
+      "winTurns": 15.94,
+      "winHpPercent": 78.79,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 667,
+        "skill": 1905,
+        "guard": 616,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 2,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 14.57,
+      "winTurns": 14.57,
+      "winHpPercent": 81.35,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 588,
+        "skill": 1748,
+        "guard": 578,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "warrior",
+      "wins": 196,
+      "samples": 200,
+      "winRate": 98,
+      "avgTurns": 26.66,
+      "winTurns": 26.53,
+      "winHpPercent": 49.06,
+      "avgPotions": 1.92,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 4948,
+        "skill": 0,
+        "guard": 0,
+        "potion": 384
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "rogue",
+      "wins": 198,
+      "samples": 200,
+      "winRate": 99,
+      "avgTurns": 24.55,
+      "winTurns": 24.47,
+      "winHpPercent": 53.35,
+      "avgPotions": 1.93,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 4525,
+        "skill": 0,
+        "guard": 0,
+        "potion": 385
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "attack",
+      "classKey": "mage",
+      "wins": 177,
+      "samples": 200,
+      "winRate": 88.5,
+      "avgTurns": 27.09,
+      "winTurns": 26.62,
+      "winHpPercent": 35.06,
+      "avgPotions": 2,
+      "deathDepth": 9,
+      "actions": {
+        "attack": 5017,
+        "skill": 0,
+        "guard": 0,
+        "potion": 400
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "warrior",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 18.83,
+      "winTurns": 18.83,
+      "winHpPercent": 75.4,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 848,
+        "skill": 2099,
+        "guard": 819,
+        "potion": 0
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "rogue",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 17.23,
+      "winTurns": 17.23,
+      "winHpPercent": 67.29,
+      "avgPotions": 0.01,
+      "deathDepth": null,
+      "actions": {
+        "attack": 757,
+        "skill": 1987,
+        "guard": 701,
+        "potion": 1
+      }
+    },
+    {
+      "profile": "max",
+      "difficulty": 3,
+      "policy": "tactical",
+      "classKey": "mage",
+      "wins": 200,
+      "samples": 200,
+      "winRate": 100,
+      "avgTurns": 15.71,
+      "winTurns": 15.71,
+      "winHpPercent": 71.32,
+      "avgPotions": 0,
+      "deathDepth": null,
+      "actions": {
+        "attack": 676,
+        "skill": 1861,
+        "guard": 604,
+        "potion": 0
+      }
+    }
+  ]
+}

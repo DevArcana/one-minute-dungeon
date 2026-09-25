@@ -1,0 +1,48 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+import {fresh,SAVE_KEY,IMPORT_BACKUP_KEY} from '../../src/systems/save.js';
+import {start,enter} from '../../src/systems/dungeon.js';
+const upload=(page,raw)=>page.locator('#save-import').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(raw)});
+const stored=page=>page.evaluate(async key=>{const read=()=>localStorage.getItem(key);return navigator.locks?navigator.locks.request(key,read):read();},SAVE_KEY);
+test.beforeEach(async({page})=>{await page.goto('/');await page.evaluate(()=>localStorage.clear());await page.reload();});
+test('preview, cancel, restore combat, reload, export previous and round trip',async({page})=>{
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const before=await stored(page),incoming=fresh();incoming.totalGold=876;incoming.lastClass='mage';start(incoming,77);enter(incoming,0);
+ await page.getByRole('button',{name:'도움말',exact:true}).click();await upload(page,JSON.stringify(incoming));
+ await expect(page.getByRole('dialog')).toContainText('876 G');
+ expect(await stored(page)).toBe(before);
+ await page.keyboard.press('Escape');expect(await stored(page)).toBe(before);
+ await page.getByRole('button',{name:'도움말',exact:true}).click();
+ await expect(page.getByRole('button',{name:'이 백업으로 복원',exact:true})).toHaveCount(0);
+ await upload(page,JSON.stringify(incoming));await page.getByRole('button',{name:'이 백업으로 복원',exact:true}).click();
+ expect(JSON.parse(await stored(page))).toEqual(incoming);
+ expect(await page.evaluate(key=>localStorage.getItem(key),IMPORT_BACKUP_KEY)).toBe(before);
+ await page.reload();await page.getByRole('button',{name:/탐험 이어하기/}).click();
+ expect(JSON.parse(await stored(page)).run).toEqual(incoming.run);
+ await page.getByRole('button',{name:'도움말',exact:true}).click();
+ const previousDownload=page.waitForEvent('download');await page.getByRole('button',{name:'복원 전 기록 내려받기',exact:true}).click();
+ expect(await readFile(await (await previousDownload).path(),'utf8')).toBe(before);
+ const currentDownload=page.waitForEvent('download');await page.getByRole('button',{name:'세이브 백업 내려받기',exact:true}).click();
+ const exported=await readFile(await (await currentDownload).path(),'utf8');expect(JSON.parse(exported)).toEqual(incoming);
+ await upload(page,exported);await page.getByRole('button',{name:'이 백업으로 복원',exact:true}).click();
+ expect(JSON.parse(await stored(page))).toEqual(incoming);expect(errors).toEqual([]);
+});
+test('invalid file and storage failure keep progress; protected saves cannot import',async({page})=>{
+ const before=await stored(page);await page.getByRole('button',{name:'도움말',exact:true}).click();
+ await upload(page,'{bad');await expect(page.locator('#import-status')).toContainText('JSON 파일을 읽을 수 없습니다');
+ expect(await stored(page)).toBe(before);await expect(page.getByRole('button',{name:'이 백업으로 복원',exact:true})).toHaveCount(0);
+ const incoming=fresh();incoming.totalGold=999;await upload(page,JSON.stringify(incoming));
+ await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new DOMException('full','QuotaExceededError');};});
+ await page.getByRole('button',{name:'이 백업으로 복원',exact:true}).click();
+ await expect(page.locator('#import-status')).toContainText('복원하지 못했습니다');expect(await stored(page)).toBe(before);
+ await page.reload();await page.evaluate(key=>localStorage.setItem(key,'{"version":99}'),SAVE_KEY);await page.reload();
+ await page.getByRole('button',{name:'도움말',exact:true}).click();await expect(page.locator('#save-import')).toBeDisabled();
+ expect(await stored(page)).toBe('{"version":99}');
+});
+test('mobile help fits viewport and import confirmation is keyboard accessible',async({page})=>{
+ await page.setViewportSize({width:320,height:640});await page.getByRole('button',{name:'도움말',exact:true}).click();
+ await upload(page,JSON.stringify(fresh()));await expect(page.getByRole('button',{name:'이 백업으로 복원',exact:true})).toBeFocused();
+ expect(await page.getByRole('dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+ await page.screenshot({path:'test-results/screenshots/import-mobile.png',fullPage:true});
+ await page.keyboard.press('Enter');await expect(page.getByRole('dialog')).not.toBeVisible();
+});
